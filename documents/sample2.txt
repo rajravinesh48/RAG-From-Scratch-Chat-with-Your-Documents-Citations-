@@ -1,0 +1,7 @@
+A hardware stipend of $500 is available for approved equipment purchases.
+
+A similarity score can be zero when the question and document chunk do not contain matching vocabulary.
+
+The similarity score can also be zero when the question contains words that are not present in the vector-store vocabulary.
+
+To fix a zero similarity score, add relevant document content, rebuild the vector store, and use clear document-related keywords.

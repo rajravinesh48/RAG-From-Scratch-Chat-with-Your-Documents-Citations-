@@ -1,0 +1,16 @@
+# ML generated files
+# Commit these for a self-contained college demo, or uncomment the lines
+# below if you prefer to regenerate the model on every machine.
+# ml_model/intent_model.joblib
+# ml_model/metrics.json
+
+# Local user database
+users.json
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.env

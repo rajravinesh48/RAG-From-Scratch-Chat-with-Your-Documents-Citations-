@@ -1,0 +1,10 @@
+{
+    "admin": {
+        "password": "scrypt:32768:8:1$lLMiphaUbBMzXih6$9d8944cf1b70ab3fbc9e96fe4f9717b514f07917d4af9531ac3b7c9aecf570e85ee748319d55cdd166bfec2c149ddc50950844460a5a19b1a83528f7d05c08df",
+        "role": "admin"
+    },
+    "user": {
+        "password": "scrypt:32768:8:1$tnkF4dysoMaPlRrx$ff9c2be1755dbfbd1410e5a9e18cae8680f7d1f4179c7bbeb28ef3c9a59c15c7b6a1388b3b2b57dc2690051d8398f0fcdf377e5ac0a49a9ec242f9487bede6fc",
+        "role": "user"
+    }
+}

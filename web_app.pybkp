@@ -1,0 +1,598 @@
+import json
+from pathlib import Path
+
+from flask import Flask, request, render_template_string, redirect, url_for, session, make_response
+from werkzeug.utils import secure_filename
+
+from ingest import ingest_documents
+from retriever import retrieve_relevant_chunks
+from generator import generate_answer
+
+
+app = Flask(__name__)
+app.secret_key = "rag_demo_secret_key"
+
+DOCUMENTS_DIR = Path("documents")
+VECTOR_STORE_FILE = Path("vector_store/store.json")
+
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
+
+
+def load_vector_store():
+    if not VECTOR_STORE_FILE.exists():
+        return None, None, None
+
+    with open(VECTOR_STORE_FILE, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    vocabulary = data["vocabulary"]
+    idf_values = data.get("idf_values")
+    chunks = data["chunks"]
+
+    return vocabulary, idf_values, chunks
+
+def is_allowed_file(filename):
+    extension = Path(filename).suffix.lower()
+    return extension in ALLOWED_EXTENSIONS
+
+
+def get_documents():
+    DOCUMENTS_DIR.mkdir(exist_ok=True)
+
+    files = []
+
+    for file_path in DOCUMENTS_DIR.iterdir():
+        if file_path.is_file() and is_allowed_file(file_path.name):
+            files.append(file_path.name)
+
+    return sorted(files)
+
+
+def get_store_stats():
+    vocabulary, idf_values, chunks = load_vector_store()
+
+    if vocabulary is None or chunks is None:
+        return {
+            "status": "Not created",
+            "total_chunks": 0,
+            "vocabulary_size": 0,
+            "document_count": len(get_documents())
+        }
+
+    return {
+        "status": "Ready",
+        "total_chunks": len(chunks),
+        "vocabulary_size": len(vocabulary),
+        "document_count": len(get_documents())
+    }
+
+
+def get_confidence(score):
+    if score >= 0.30:
+        return "High"
+    elif score >= 0.10:
+        return "Medium"
+    elif score > 0:
+        return "Low"
+    else:
+        return "No Match"
+
+
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAG From Scratch</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .main {
+            display: flex;
+            gap: 20px;
+            width: 1200px;
+            margin: 30px auto;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.08);
+        }
+
+        .chat-box {
+            flex: 1;
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            color: #1e3a8a;
+            margin-top: 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            padding: 12px;
+            font-size: 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            resize: none;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 11px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .full-btn {
+            width: 100%;
+        }
+
+        .success {
+            background: #16a34a;
+        }
+
+        .danger {
+            background: #dc2626;
+        }
+
+        .gray {
+            background: #475569;
+        }
+
+        .message {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .user {
+            background: #dbeafe;
+            border-left: 5px solid #2563eb;
+        }
+
+        .bot {
+            background: #f8fafc;
+            border-left: 5px solid #16a34a;
+        }
+
+        .notice {
+            background: #fff7ed;
+            border-left: 5px solid #f97316;
+        }
+
+        .status {
+            background: #ecfdf5;
+            color: #166534;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .doc-list {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .doc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 7px 0;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            padding: 4px 8px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .question-btn {
+            display: block;
+            width: 100%;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            margin-top: 8px;
+            text-align: left;
+        }
+
+        .question-btn:hover {
+            background: #c7d2fe;
+        }
+
+        .stats {
+            background: #eff6ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        .stats p {
+            margin: 7px 0;
+        }
+
+        .confidence {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e3a8a;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        details {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+
+        .source {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+            border-left: 4px solid #64748b;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            margin: 25px;
+            font-size: 13px;
+        }
+    </style>
+
+    <script>
+        function setQuestion(question) {
+            document.getElementById("question").value = question;
+        }
+    </script>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>RAG From Scratch</h1>
+    <p>Chat with Your Documents + Citations</p>
+</div>
+
+<div class="main">
+
+    <div class="sidebar">
+
+        {% if message %}
+            <div class="status">{{ message }}</div>
+        {% endif %}
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <h2>Vector Store Stats</h2>
+
+        <div class="stats">
+            <p><b>Status:</b> {{ stats.status }}</p>
+            <p><b>Documents:</b> {{ stats.document_count }}</p>
+            <p><b>Total Chunks:</b> {{ stats.total_chunks }}</p>
+            <p><b>Vocabulary Size:</b> {{ stats.vocabulary_size }}</p>
+        </div>
+
+        <h2>Documents</h2>
+
+        <form method="POST" action="/upload" enctype="multipart/form-data">
+            <b>Upload PDF/TXT/DOCX</b><br><br>
+            <input type="file" name="document">
+            <button type="submit" class="full-btn success">Upload + Rebuild Store</button>
+        </form>
+
+        <form method="POST" action="/rebuild">
+            <button type="submit" class="full-btn">Rebuild Vector Store</button>
+        </form>
+
+        <div class="doc-list">
+            <b>Available Documents:</b>
+
+            {% if documents %}
+                {% for doc in documents %}
+                    <div class="doc-item">
+                        <span>📄 {{ doc }}</span>
+                        <form method="POST" action="/delete/{{ doc }}" style="margin:0;">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No documents uploaded yet.</p>
+            {% endif %}
+        </div>
+
+        <h2 style="margin-top:25px;">Suggested Questions</h2>
+
+        <button class="question-btn" onclick="setQuestion('What is RAG?')">What is RAG?</button>
+        <button class="question-btn" onclick="setQuestion('Which file types are supported?')">Which file types are supported?</button>
+        <button class="question-btn" onclick="setQuestion('What is chunking?')">What is chunking?</button>
+        <button class="question-btn" onclick="setQuestion('What is an embedding vector?')">What is an embedding vector?</button>
+        <button class="question-btn" onclick="setQuestion('How are relevant chunks retrieved?')">How are relevant chunks retrieved?</button>
+        <button class="question-btn" onclick="setQuestion('What is cosine similarity used for?')">What is cosine similarity used for?</button>
+
+        <form method="POST" action="/download-chat">
+            <button type="submit" class="full-btn gray">Download Chat History</button>
+        </form>
+
+        <form method="POST" action="/clear">
+            <button type="submit" class="full-btn danger">Clear Chat</button>
+        </form>
+
+    </div>
+
+    <div class="chat-box">
+        <h2>Ask Question</h2>
+
+        <form method="POST" action="/">
+            <textarea id="question" name="question" placeholder="Ask anything from uploaded documents...">{{ question }}</textarea>
+            <button type="submit">Ask</button>
+        </form>
+
+        <hr style="margin:25px 0;">
+
+        {% if not chat_history %}
+            <div class="message notice">
+Welcome! Upload documents or use existing documents, then ask a question.
+The answer will be generated only from retrieved chunks with citations.
+            </div>
+        {% endif %}
+
+        {% for chat in chat_history %}
+            <div class="message user">
+<b>You:</b>
+{{ chat.question }}
+            </div>
+
+            <div class="message bot">
+<span class="confidence">Confidence: {{ chat.confidence }}</span>
+
+<b>Answer:</b>
+{{ chat.answer }}
+
+<details>
+    <summary>View Source Chunks</summary>
+
+    {% for source in chat.sources %}
+        <div class="source">
+            <b>{{ source.filename }}</b> | Chunk ID: {{ source.chunk_id }} | Score: {{ source.score }}
+            <br>
+            <b>Matched Keywords:</b> {{ source.matched_keywords }}
+<br>        <br>
+{{ source.text }}
+        </div>
+    {% endfor %}
+</details>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<footer>
+    Built with Python, Flask, NumPy, JSON Vector Store, Cosine Similarity and Citations
+</footer>
+
+</body>
+</html>
+"""
+
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    question = ""
+    message = request.args.get("message")
+    error = request.args.get("error")
+
+    if "chat_history" not in session:
+        session["chat_history"] = []
+
+    if request.method == "POST":
+        question = request.form.get("question", "").strip()
+
+        if not question:
+            error = "Please enter a question."
+        else:
+            vocabulary, idf_values, embedded_chunks = load_vector_store()
+
+            if vocabulary is None or embedded_chunks is None:
+                error = "Vector store not found. Please upload documents or run python ingest.py."
+            else:
+                relevant_chunks = retrieve_relevant_chunks(
+                    question=question,
+                    embedded_chunks=embedded_chunks,
+                    vocabulary=vocabulary,
+                    idf_values=idf_values,
+                    top_k=3,
+                    min_score=0.01
+                )
+
+                answer = generate_answer(question, relevant_chunks)
+
+                top_score = 0
+                if relevant_chunks:
+                    top_score = relevant_chunks[0]["score"]
+
+                confidence = get_confidence(top_score)
+
+                sources = []
+
+                for chunk in relevant_chunks:
+                    if chunk["score"] > 0:
+                        sources.append({
+                            "filename": chunk["filename"],
+                            "chunk_id": chunk["chunk_id"],
+                            "score": round(chunk["score"], 4),
+                            "matched_keywords": ", ".join(chunk.get("matched_keywords", [])),
+                            "text": chunk["text"]
+                        })
+
+                chat_history = session.get("chat_history", [])
+                chat_history.append({
+                    "question": question,
+                    "answer": answer,
+                    "confidence": confidence,
+                    "sources": sources
+                })
+
+                session["chat_history"] = chat_history
+
+    return render_template_string(
+        HTML_PAGE,
+        question=question,
+        chat_history=session.get("chat_history", []),
+        documents=get_documents(),
+        stats=get_store_stats(),
+        message=message,
+        error=error
+    )
+
+
+@app.route("/upload", methods=["POST"])
+def upload_document():
+    if "document" not in request.files:
+        return redirect(url_for("home", error="No file selected."))
+
+    file = request.files["document"]
+
+    if file.filename == "":
+        return redirect(url_for("home", error="No file selected."))
+
+    if not is_allowed_file(file.filename):
+        return redirect(url_for("home", error="Only PDF, TXT and DOCX files are supported."))
+
+    DOCUMENTS_DIR.mkdir(exist_ok=True)
+
+    filename = secure_filename(file.filename)
+    save_path = DOCUMENTS_DIR / filename
+    file.save(save_path)
+
+    try:
+        ingest_documents()
+    except Exception as e:
+        return redirect(url_for("home", error=f"File uploaded but vector store failed: {str(e)}"))
+
+    return redirect(url_for("home", message="Document uploaded and vector store rebuilt successfully."))
+
+
+@app.route("/delete/<filename>", methods=["POST"])
+def delete_document(filename):
+    safe_filename = secure_filename(filename)
+    file_path = DOCUMENTS_DIR / safe_filename
+
+    if file_path.exists():
+        file_path.unlink()
+
+        try:
+            ingest_documents()
+        except Exception as e:
+            return redirect(url_for("home", error=f"Document deleted but vector store rebuild failed: {str(e)}"))
+
+        return redirect(url_for("home", message="Document deleted and vector store rebuilt successfully."))
+
+    return redirect(url_for("home", error="Document not found."))
+
+
+@app.route("/rebuild", methods=["POST"])
+def rebuild_store():
+    try:
+        ingest_documents()
+    except Exception as e:
+        return redirect(url_for("home", error=f"Vector store rebuild failed: {str(e)}"))
+
+    return redirect(url_for("home", message="Vector store rebuilt successfully."))
+
+
+@app.route("/clear", methods=["POST"])
+def clear_chat():
+    session["chat_history"] = []
+    return redirect(url_for("home", message="Chat cleared."))
+
+
+@app.route("/download-chat", methods=["POST"])
+def download_chat():
+    chat_history = session.get("chat_history", [])
+
+    content = "RAG Chat History\n"
+    content += "=" * 50 + "\n\n"
+
+    if not chat_history:
+        content += "No chat history available.\n"
+    else:
+        for index, chat in enumerate(chat_history, start=1):
+            content += f"Question {index}:\n"
+            content += chat["question"] + "\n\n"
+            content += "Answer:\n"
+            content += chat["answer"] + "\n"
+            content += "-" * 50 + "\n\n"
+
+    response = make_response(content)
+    response.headers["Content-Disposition"] = "attachment; filename=rag_chat_history.txt"
+    response.headers["Content-Type"] = "text/plain"
+
+    return response
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,0 +1,32 @@
+ACME CORP REMOTE WORK AND VACATION POLICY 2026
+
+1. Vacation Allocation
+All full-time employees receive 25 days of paid annual leave per calendar year. 
+Unused vacation days do not roll over to the next year; they expire on December 31st.
+
+2. Remote Work Core Hours
+Employees working remotely must be online and reachable during core operating hours. 
+The core hours are 10:00 AM to 3:00 PM Eastern Standard Time (EST).
+
+3. Equipment Stipend
+New hires receive a one-time home office hardware stipend of $500. 
+This stipend can be used to purchase monitors, ergonomic chairs, or keyboards. 
+Receipts must be submitted via the internal expense portal within 30 days of purchase.
+
+A similarity score can be zero when the question and document chunk do not contain matching vocabulary.
+
+The similarity score can also be zero when the question contains words that are not present in the vector store vocabulary.
+
+To fix a zero similarity score, add relevant content to the documents, rebuild the vector store, and ask the question using terms available in the uploaded documents.
+
+Removing unnecessary words and using clear document-related keywords can improve the similarity score.
+
+The vector store must be rebuilt whenever a document is added, changed, or deleted.
+
+A hardware stipend of $500 is provided for approved equipment purchases.
+
+A similarity score can be zero when the question and document chunk do not contain matching vocabulary.
+
+The similarity score can also be zero when the question contains words that are not present in the vector store vocabulary.
+
+To fix a zero similarity score, add relevant content, rebuild the vector store, and use document-related keywords.

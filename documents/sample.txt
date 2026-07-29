@@ -1,0 +1,17 @@
+This is a sample document.
+
+RAG means Retrieval Augmented Generation.
+
+Supported file types are PDF, TXT, and DOCX.
+
+The text is divided into smaller chunks.
+
+Each chunk is converted into an embedding vector.
+
+The vectors are stored in a JSON vector store.
+
+Relevant chunks are retrieved using cosine similarity.
+
+The answer is generated only from the retrieved chunks.
+
+Citations show the filename and chunk ID used to answer the question.

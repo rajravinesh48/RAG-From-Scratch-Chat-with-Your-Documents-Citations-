@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG From Scratch</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            color: #0f172a;
+        }
+
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 22px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .header p {
+            margin: 8px 0;
+        }
+
+        .top-info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .top-info a {
+            color: white;
+            font-weight: bold;
+        }
+
+        .main {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            width: min(1250px, calc(100% - 30px));
+            margin: 30px auto;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .chat-box {
+            flex: 1;
+            min-width: 0;
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            color: #1e3a8a;
+            margin-top: 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            padding: 12px;
+            font-size: 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        textarea:focus,
+        input:focus,
+        select:focus {
+            border-color: #2563eb;
+            outline: 3px solid rgba(37, 99, 235, 0.12);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 11px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            filter: brightness(0.93);
+        }
+
+        .full-btn {
+            width: 100%;
+        }
+
+        .success {
+            background: #16a34a;
+        }
+
+        .danger {
+            background: #dc2626;
+        }
+
+        .gray {
+            background: #475569;
+        }
+
+        .purple {
+            background: #7c3aed;
+        }
+
+        .message {
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+        }
+
+        .message-text {
+            white-space: pre-wrap;
+            margin-top: 8px;
+        }
+
+        .answer-text {
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .user-message {
+            background: #dbeafe;
+            border-left: 5px solid #2563eb;
+        }
+
+        .bot-message {
+            background: #f8fafc;
+            border-left: 5px solid #16a34a;
+        }
+
+        .notice {
+            background: #fff7ed;
+            border-left: 5px solid #f97316;
+        }
+
+        .status {
+            background: #ecfdf5;
+            color: #166534;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .stats,
+        .ml-stats {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        .stats {
+            background: #eff6ff;
+        }
+
+        .ml-stats {
+            background: #f5f3ff;
+            border-left: 4px solid #7c3aed;
+        }
+
+        .stats p,
+        .ml-stats p {
+            margin: 7px 0;
+        }
+
+        .doc-list {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .doc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin: 7px 0;
+            font-size: 14px;
+        }
+
+        .doc-name {
+            overflow-wrap: anywhere;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            padding: 5px 9px;
+            font-size: 12px;
+            margin: 0;
+            width: auto;
+        }
+
+        .question-btn {
+            display: block;
+            width: 100%;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            margin-top: 8px;
+            text-align: left;
+        }
+
+        .confidence,
+        .ml-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin: 0 5px 10px 0;
+        }
+
+        .confidence {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .ml-badge {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .ml-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .chat-meta {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .chat-number {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 4px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .chat-time {
+            color: #475569;
+            font-size: 12px;
+        }
+
+        .latest-badge {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        details {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+
+        .source {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+            border-left: 4px solid #64748b;
+            font-size: 14px;
+        }
+
+        .admin-box {
+            background: #fff7ed;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 18px;
+        }
+
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 6px;
+            font-size: 14px;
+        }
+
+        .answer-label {
+            display: block;
+            margin-top: 4px;
+            margin-bottom: 5px;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            margin: 25px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            .main {
+                flex-direction: column;
+            }
+
+            .sidebar,
+            .chat-box {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <script>
+        function setQuestion(question) {
+            const questionField =
+                document.getElementById("question");
+
+            questionField.value = question;
+            questionField.focus();
+        }
+
+        function confirmDeleteDocument(filename) {
+            return confirm(
+                "Delete document '" + filename + "'?"
+            );
+        }
+
+        function confirmDeleteUser(username) {
+            return confirm(
+                "Delete user '" + username + "'?"
+            );
+        }
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <h1>RAG From Scratch</h1>
+        <p>
+            Chat with Your Documents + Citations +
+            ML Intent Classification + Gemini Generation
+        </p>
+
+        <div class="top-info">
+            Logged in as:
+            <b>{{ current_user.username }}</b>
+            | Role:
+            <b>{{ current_user.role }}</b>
+            |
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </header>
+
+    <main class="main">
+        <aside class="sidebar">
+            {% if message %}
+                <div class="status">{{ message }}</div>
+            {% endif %}
+
+            {% if error %}
+                <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <h2>Vector Store Stats</h2>
+
+            <div class="stats">
+                <p><b>Status:</b> {{ stats.status }}</p>
+                <p>
+                    <b>Documents:</b>
+                    {{ stats.document_count }}
+                </p>
+                <p>
+                    <b>Total Chunks:</b>
+                    {{ stats.total_chunks }}
+                </p>
+                <p>
+                    <b>Vocabulary Size:</b>
+                    {{ stats.vocabulary_size }}
+                </p>
+            </div>
+
+            <h2>ML Intent Model</h2>
+
+            <div class="ml-stats">
+                <p>
+                    <b>Status:</b>
+                    {{ ml_status.status }}
+                </p>
+
+                {% if ml_status.available %}
+                    <p>
+                        <b>Validation Accuracy:</b>
+                        {% if ml_status.accuracy is not none %}
+                            {{ "%.2f"|format(
+                                ml_status.accuracy * 100
+                            ) }}%
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </p>
+                    <p>
+                        <b>Cross-validation Accuracy:</b>
+
+                        {% if ml_status.cross_validation_accuracy is not none %}
+                            {{ "%.2f"|format(
+                                ml_status.cross_validation_accuracy * 100
+                            ) }}%
+
+                            {% if ml_status.cross_validation_std is not none %}
+                                ±
+                                {{ "%.2f"|format(
+                                    ml_status.cross_validation_std * 100
+                                ) }}%
+                            {% endif %}
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </p>
+                    <p>
+                        <b>Training Samples:</b>
+                        {{ ml_status.samples }}
+                    </p>
+                    <p>
+                        <b>Classes:</b>
+                        {{ ml_status.classes|length }}
+                    </p>
+                    <p>
+                        <b>Last Trained:</b>
+                        {{ ml_status.trained_at
+                            or "Not available" }}
+                    </p>
+                {% else %}
+                    <p>
+                        Train the model before using ML-based
+                        intent prediction.
+                    </p>
+                {% endif %}
+            </div>
+
+            {% if current_user.role == "admin" %}
+                <form
+                    method="POST"
+                    action="{{ url_for('train_ml_model') }}"
+                >
+                    <button
+                        type="submit"
+                        class="full-btn purple"
+                    >
+                        {% if ml_status.available %}
+                            Retrain ML Intent Model
+                        {% else %}
+                            Train ML Intent Model
+                        {% endif %}
+                    </button>
+                </form>
+            {% endif %}
+
+            <h2 style="margin-top: 25px;">
+                Documents
+            </h2>
+
+            {% if current_user.role == "admin" %}
+                <form
+                    method="POST"
+                    action="{{ url_for(
+                        'upload_document'
+                    ) }}"
+                    enctype="multipart/form-data"
+                >
+                    <b>Upload PDF/TXT/DOCX</b><br><br>
+
+                    <input
+                        type="file"
+                        name="document"
+                        accept=".pdf,.txt,.docx"
+                        required
+                    >
+
+                    <button
+                        type="submit"
+                        class="full-btn success"
+                    >
+                        Upload + Rebuild Store
+                    </button>
+                </form>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('rebuild_store') }}"
+                >
+                    <button
+                        type="submit"
+                        class="full-btn"
+                    >
+                        Rebuild Vector Store
+                    </button>
+                </form>
+            {% else %}
+                <div class="message notice">
+You are logged in as a user. You can ask questions and view documents, but only an admin can upload, delete, rebuild documents, or train the ML model.
+                </div>
+            {% endif %}
+
+            <div class="doc-list">
+                <b>Available Documents:</b>
+
+                {% if documents %}
+                    {% for doc in documents %}
+                        <div class="doc-item">
+                            <span class="doc-name">
+                                📄 {{ doc }}
+                            </span>
+
+                            {% if current_user.role == "admin" %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'delete_document',
+                                        filename=doc
+                                    ) }}"
+                                    onsubmit="return confirmDeleteDocument(
+                                        '{{ doc|e }}'
+                                    );"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="delete-btn"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No documents uploaded yet.</p>
+                {% endif %}
+            </div>
+
+            {% if current_user.role == "admin" %}
+                <section class="admin-box">
+                    <h2>Admin User Control</h2>
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('create_user') }}"
+                    >
+                        <input
+                            type="text"
+                            name="new_username"
+                            placeholder="New username"
+                            required
+                        >
+
+                        <input
+                            type="password"
+                            name="new_password"
+                            placeholder="Password (minimum 6 characters)"
+                            minlength="6"
+                            required
+                        >
+
+                        <select name="new_role">
+                            <option value="user">
+                                User
+                            </option>
+                            <option value="admin">
+                                Admin
+                            </option>
+                        </select>
+
+                        <button
+                            type="submit"
+                            class="full-btn success"
+                        >
+                            Create User
+                        </button>
+                    </form>
+
+                    <h3>Existing Users</h3>
+
+                    {% for item in users %}
+                        <div class="user-row">
+                            <span>
+                                {{ item.username }}
+                                ({{ item.role }})
+                            </span>
+
+                            {% if item.username
+                                != current_user.username %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'delete_user',
+                                        username=item.username
+                                    ) }}"
+                                    onsubmit="return confirmDeleteUser(
+                                        '{{ item.username|e }}'
+                                    );"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="delete-btn"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+
+            <h2 style="margin-top: 25px;">
+                Suggested Questions
+            </h2>
+
+            <button
+                type="button"
+                class="question-btn"
+                onclick="setQuestion('What is RAG?')"
+            >
+                What is RAG?
+            </button>
+
+            <button
+                type="button"
+                class="question-btn"
+                onclick="setQuestion(
+                    'Which file types are supported?'
+                )"
+            >
+                Which file types are supported?
+            </button>
+
+            <button
+                type="button"
+                class="question-btn"
+                onclick="setQuestion(
+                    'What is chunking?'
+                )"
+            >
+                What is chunking?
+            </button>
+
+            <button
+                type="button"
+                class="question-btn"
+                onclick="setQuestion(
+                    'How are relevant chunks retrieved?'
+                )"
+            >
+                How are relevant chunks retrieved?
+            </button>
+
+            <button
+                type="button"
+                class="question-btn"
+                onclick="setQuestion(
+                    'Why is similarity score zero?'
+                )"
+            >
+                Why is similarity score zero?
+            </button>
+
+            <form
+                method="POST"
+                action="{{ url_for('download_chat') }}"
+            >
+                <button
+                    type="submit"
+                    class="full-btn gray"
+                >
+                    Download My Chat History
+                </button>
+            </form>
+
+            <form
+                method="POST"
+                action="{{ url_for('clear_chat') }}"
+            >
+                <button
+                    type="submit"
+                    class="full-btn danger"
+                >
+                    Clear My Chat
+                </button>
+            </form>
+        </aside>
+
+        <section class="chat-box">
+            <h2>Ask Question</h2>
+
+            <form
+                method="POST"
+                action="{{ url_for('home') }}"
+            >
+                <textarea
+                    id="question"
+                    name="question"
+                    placeholder="Ask anything from uploaded documents..."
+                    required
+                >{{ question }}</textarea>
+
+                <label for="top_k">
+                    <b>Maximum Top K Chunks:</b>
+                </label>
+
+                <select id="top_k" name="top_k">
+                    {% for option in [1, 2, 3, 5] %}
+                        <option
+                            value="{{ option }}"
+                            {% if selected_top_k == option %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ option }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">
+                    Ask with ML + RAG
+                </button>
+            </form>
+
+            <hr style="margin: 25px 0;">
+
+            {% if not chat_history %}
+                <div class="message notice">
+Welcome! Ask questions from uploaded documents.
+The ML model classifies the question intent, then RAG retrieves relevant chunks and generates an answer with citations.
+                </div>
+            {% endif %}
+
+            {% for chat in chat_history %}
+                <article class="chat-entry">
+                    <div class="message user-message">
+                        <div class="chat-meta">
+                            <span class="chat-number">
+                                Question {{ loop.index }}
+                            </span>
+
+                            {% if loop.first %}
+                                <span class="latest-badge">
+                                    Latest
+                                </span>
+                            {% endif %}
+
+                            <span class="chat-time">
+                                🕒
+                                {{ chat.time|default(
+                                    "Time unavailable",
+                                    true
+                                ) }}
+                            </span>
+                        </div>
+
+                        <b>You:</b>
+                        <div class="message-text">
+                            {{ chat.question }}
+                        </div>
+                    </div>
+
+                    <div class="message bot-message">
+                        <span class="confidence">
+                            RAG Confidence:
+                            {{ chat.confidence }}
+                        </span>
+
+                        <span class="ml-badge">
+                            ML Intent:
+                            {{ chat.intent|default(
+                                "General",
+                                true
+                            ) }}
+                        </span>
+
+                        <span class="ml-badge">
+                            ML Confidence:
+                            {{ chat.intent_confidence
+                                |default(0, true) }}%
+                        </span>
+                        {% if chat.intent_low_confidence|default(false) %}
+                            <span class="ml-badge ml-warning">
+                                Low-confidence prediction
+                            </span>
+                        {% endif %}
+
+                        <span class="ml-badge">
+                            Chunks Used:
+                            {{ chat.top_k_used
+                                |default(3, true) }}
+                        </span>
+
+                        {% if chat.ml_model_available is defined
+                            and chat.ml_model_available is false %}
+                            <span class="ml-badge ml-warning">
+                                ML model not trained
+                            </span>
+                        {% endif %}
+
+                        <b class="answer-label">
+                            Answer:
+                        </b>
+
+                        <div class="answer-text">
+                            {{ chat.answer }}
+                        </div>
+                        {% if chat.sources %}
+                            <details>
+                                <summary>
+                                    View Source Chunks
+                                </summary>
+
+                                {% for source in chat.sources %}
+                                    <div class="source">
+                                        <b>{{ source.filename }}</b>
+                                        | Chunk ID: {{ source.chunk_id }}
+                                        | Score: {{ source.score }}
+                                        <br>
+
+                                        <b>Matched Keywords:</b>
+                                        {{ source.matched_keywords or "None" }}
+                                        <br><br>
+
+                                        {{ source.text }}
+                                    </div>
+                                {% endfor %}
+                            </details>
+                        {% endif %}
+                       
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        Built with Python, Flask, NumPy, TF-IDF,
+        Logistic Regression, Google Gemini API,
+        JSON Vector Store, Cosine Similarity,
+        Citations and Role-Based Access Control
+    </footer>
+</body>
+</html>

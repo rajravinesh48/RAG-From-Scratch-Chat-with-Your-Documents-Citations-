@@ -1,0 +1,57 @@
+RAG means Retrieval Augmented Generation.
+
+The full form of RAG is Retrieval Augmented Generation.
+
+This project supports PDF, TXT, and DOCX files.
+
+The first step of this project is document ingestion.
+
+Document ingestion means reading documents from the documents folder.
+
+After ingestion, the text is divided into smaller chunks.
+
+Chunking means splitting large text into small meaningful parts.
+
+Each chunk is converted into an embedding vector.
+
+An embedding vector is a numeric representation of text meaning.
+
+The vectors are stored in a JSON vector store.
+
+The vector store contains chunk text, filename, chunk ID, and embedding.
+
+When a user asks a question, the question is also converted into a vector.
+
+The system compares the question vector with stored chunk vectors.
+
+Relevant chunks are retrieved using cosine similarity.
+
+Cosine similarity is used to find the closest matching chunks.
+
+The answer is generated only from the retrieved chunks.
+
+Citations show which document and chunk were used to generate the answer.
+
+This project does not use an external vector database.
+
+This project uses NumPy for vector operations and cosine similarity.
+
+PDF text is extracted using pypdf.
+
+DOCX text is extracted using python-docx.
+
+TXT files are read directly using Python file handling.
+
+The main application file is app.py.
+
+The ingest.py file creates the vector store.
+
+The extract_text.py file extracts text from PDF, TXT, and DOCX files.
+
+The chunker.py file splits text into smaller chunks.
+
+The embeddings.py file creates word frequency based vectors.
+
+The retriever.py file retrieves relevant chunks.
+
+The generator.py file creates the final answer with citations.
