@@ -1,907 +1,1043 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG From Scratch</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-        body {
-            font-family: Arial, sans-serif;
-            background: #eef2f7;
-            margin: 0;
-            color: #0f172a;
-        }
+    <title>Scholar - RAG From Scratch</title>
 
-        .header {
-            background: #1e3a8a;
-            color: white;
-            padding: 22px;
-            text-align: center;
-        }
-
-        .header h1 {
-            margin: 0;
-        }
-
-        .header p {
-            margin: 8px 0;
-        }
-
-        .top-info {
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .top-info a {
-            color: white;
-            font-weight: bold;
-        }
-
-        .main {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-            width: min(1250px, calc(100% - 30px));
-            margin: 30px auto;
-        }
-
-        .sidebar {
-            width: 380px;
-            background: white;
-            padding: 22px;
-            border-radius: 12px;
-            box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .chat-box {
-            flex: 1;
-            min-width: 0;
-            background: white;
-            padding: 22px;
-            border-radius: 12px;
-            box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
-        }
-
-        h2 {
-            color: #1e3a8a;
-            margin-top: 0;
-        }
-
-        textarea {
-            width: 100%;
-            height: 90px;
-            padding: 12px;
-            font-size: 15px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            resize: vertical;
-        }
-
-        textarea:focus,
-        input:focus,
-        select:focus {
-            border-color: #2563eb;
-            outline: 3px solid rgba(37, 99, 235, 0.12);
-        }
-
-        input,
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-top: 8px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-        }
-
-        button {
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 11px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            filter: brightness(0.93);
-        }
-
-        .full-btn {
-            width: 100%;
-        }
-
-        .success {
-            background: #16a34a;
-        }
-
-        .danger {
-            background: #dc2626;
-        }
-
-        .gray {
-            background: #475569;
-        }
-
-        .purple {
-            background: #7c3aed;
-        }
-
-        .message {
-            padding: 18px;
-            border-radius: 10px;
-            margin-bottom: 16px;
-            line-height: 1.55;
-            overflow-wrap: anywhere;
-        }
-
-        .message-text {
-            white-space: pre-wrap;
-            margin-top: 8px;
-        }
-
-        .answer-text {
-            white-space: pre-wrap;
-            margin-top: 10px;
-        }
-
-        .badge-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .user-message {
-            background: #dbeafe;
-            border-left: 5px solid #2563eb;
-        }
-
-        .bot-message {
-            background: #f8fafc;
-            border-left: 5px solid #16a34a;
-        }
-
-        .notice {
-            background: #fff7ed;
-            border-left: 5px solid #f97316;
-        }
-
-        .status {
-            background: #ecfdf5;
-            color: #166534;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .error {
-            background: #fef2f2;
-            color: #991b1b;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .stats,
-        .ml-stats {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 18px;
-            font-size: 14px;
-        }
-
-        .stats {
-            background: #eff6ff;
-        }
-
-        .ml-stats {
-            background: #f5f3ff;
-            border-left: 4px solid #7c3aed;
-        }
-
-        .stats p,
-        .ml-stats p {
-            margin: 7px 0;
-        }
-
-        .doc-list {
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 12px;
-        }
-
-        .doc-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            margin: 7px 0;
-            font-size: 14px;
-        }
-
-        .doc-name {
-            overflow-wrap: anywhere;
-        }
-
-        .delete-btn {
-            background: #dc2626;
-            padding: 5px 9px;
-            font-size: 12px;
-            margin: 0;
-            width: auto;
-        }
-
-        .question-btn {
-            display: block;
-            width: 100%;
-            background: #e0e7ff;
-            color: #1e3a8a;
-            margin-top: 8px;
-            text-align: left;
-        }
-
-        .confidence,
-        .ml-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 13px;
-            margin: 0 5px 10px 0;
-        }
-
-        .confidence {
-            background: #dbeafe;
-            color: #1e3a8a;
-        }
-
-        .ml-badge {
-            background: #ede9fe;
-            color: #5b21b6;
-        }
-
-        .ml-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .chat-meta {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .chat-number {
-            display: inline-block;
-            background: #2563eb;
-            color: white;
-            padding: 4px 9px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .chat-time {
-            color: #475569;
-            font-size: 12px;
-        }
-
-        .latest-badge {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            padding: 4px 9px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        details {
-            background: #f1f5f9;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-
-        summary {
-            cursor: pointer;
-            font-weight: bold;
-            color: #1e3a8a;
-        }
-
-        .source {
-            background: white;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 8px;
-            border-left: 4px solid #64748b;
-            font-size: 14px;
-        }
-
-        .admin-box {
-            background: #fff7ed;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 18px;
-        }
-
-        .user-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            background: #f8fafc;
-            padding: 8px;
-            border-radius: 6px;
-            margin-top: 6px;
-            font-size: 14px;
-        }
-
-        .answer-label {
-            display: block;
-            margin-top: 4px;
-            margin-bottom: 5px;
-        }
-
-        footer {
-            text-align: center;
-            color: #64748b;
-            margin: 25px;
-            font-size: 13px;
-        }
-
-        @media (max-width: 900px) {
-            .main {
-                flex-direction: column;
-            }
-
-            .sidebar,
-            .chat-box {
-                width: 100%;
-            }
-        }
-    </style>
-
-    <script>
-        function setQuestion(question) {
-            const questionField =
-                document.getElementById("question");
-
-            questionField.value = question;
-            questionField.focus();
-        }
-
-        function confirmDeleteDocument(filename) {
-            return confirm(
-                "Delete document '" + filename + "'?"
-            );
-        }
-
-        function confirmDeleteUser(username) {
-            return confirm(
-                "Delete user '" + username + "'?"
-            );
-        }
-    </script>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
-    <header class="header">
-        <h1>RAG From Scratch</h1>
-        <p>
-            Chat with Your Documents + Citations +
-            ML Intent Classification + Gemini Generation
-        </p>
 
-        <div class="top-info">
-            Logged in as:
-            <b>{{ current_user.username }}</b>
-            | Role:
-            <b>{{ current_user.role }}</b>
-            |
-            <a href="{{ url_for('logout') }}">Logout</a>
+<!-- =====================================================
+     TOP HEADER
+===================================================== -->
+
+<header class="top-header">
+
+    <div class="header-brand">
+
+        <div class="brand-icon">
+            ▣
         </div>
-    </header>
 
-    <main class="main">
-        <aside class="sidebar">
-            {% if message %}
-                <div class="status">{{ message }}</div>
-            {% endif %}
-
-            {% if error %}
-                <div class="error">{{ error }}</div>
-            {% endif %}
-
-            <h2>Vector Store Stats</h2>
-
-            <div class="stats">
-                <p><b>Status:</b> {{ stats.status }}</p>
-                <p>
-                    <b>Documents:</b>
-                    {{ stats.document_count }}
-                </p>
-                <p>
-                    <b>Total Chunks:</b>
-                    {{ stats.total_chunks }}
-                </p>
-                <p>
-                    <b>Vocabulary Size:</b>
-                    {{ stats.vocabulary_size }}
-                </p>
+        <div>
+            <div class="brand-small">
+                RAG · FROM SCRATCH
             </div>
 
-            <h2>ML Intent Model</h2>
-
-            <div class="ml-stats">
-                <p>
-                    <b>Status:</b>
-                    {{ ml_status.status }}
-                </p>
-
-                {% if ml_status.available %}
-                    <p>
-                        <b>Validation Accuracy:</b>
-                        {% if ml_status.accuracy is not none %}
-                            {{ "%.2f"|format(
-                                ml_status.accuracy * 100
-                            ) }}%
-                        {% else %}
-                            Not available
-                        {% endif %}
-                    </p>
-                    <p>
-                        <b>Cross-validation Accuracy:</b>
-
-                        {% if ml_status.cross_validation_accuracy is not none %}
-                            {{ "%.2f"|format(
-                                ml_status.cross_validation_accuracy * 100
-                            ) }}%
-
-                            {% if ml_status.cross_validation_std is not none %}
-                                ±
-                                {{ "%.2f"|format(
-                                    ml_status.cross_validation_std * 100
-                                ) }}%
-                            {% endif %}
-                        {% else %}
-                            Not available
-                        {% endif %}
-                    </p>
-                    <p>
-                        <b>Training Samples:</b>
-                        {{ ml_status.samples }}
-                    </p>
-                    <p>
-                        <b>Classes:</b>
-                        {{ ml_status.classes|length }}
-                    </p>
-                    <p>
-                        <b>Last Trained:</b>
-                        {{ ml_status.trained_at
-                            or "Not available" }}
-                    </p>
-                {% else %}
-                    <p>
-                        Train the model before using ML-based
-                        intent prediction.
-                    </p>
-                {% endif %}
+            <div class="brand-name">
+                Scholar
             </div>
+        </div>
+
+    </div>
+
+
+    <div class="header-user">
+
+        <div class="user-info">
+
+            <strong>
+                {{ current_user.username }}
+            </strong>
+
+            <small>
+                {{ current_user.role }}
+            </small>
+
+        </div>
+
+        <a
+            href="{{ url_for('logout') }}"
+            class="logout-btn"
+        >
+            ↪ SIGN OUT
+        </a>
+
+    </div>
+
+</header>
+
+
+<!-- =====================================================
+     MESSAGES
+===================================================== -->
+
+{% if message %}
+<div class="global-message success-message">
+    {{ message }}
+</div>
+{% endif %}
+
+{% if error %}
+<div class="global-message error-message">
+    {{ error }}
+</div>
+{% endif %}
+
+
+<!-- =====================================================
+     MAIN APPLICATION
+===================================================== -->
+
+<div class="app-layout">
+
+
+    <!-- =================================================
+         LEFT SIDEBAR
+    ================================================== -->
+
+    <aside class="left-panel">
+
+
+        <!-- LIBRARY -->
+
+        <section class="sidebar-section">
+
+            <div class="section-title">
+                LIBRARY
+            </div>
+
 
             {% if current_user.role == "admin" %}
-                <form
-                    method="POST"
-                    action="{{ url_for('train_ml_model') }}"
+
+            <form
+                class="upload-form"
+                action="{{ url_for('upload_document') }}"
+                method="post"
+                enctype="multipart/form-data"
+            >
+
+                <label
+                    for="document-upload"
+                    class="upload-dropzone"
                 >
+
+                    <div class="upload-icon">
+                        ☁
+                    </div>
+
+                    <div class="upload-title">
+                        Drop files or click to browse
+                    </div>
+
+                    <div class="upload-types">
+                        PDF · DOCX · TXT
+                    </div>
+
+                    <span class="choose-file-button">
+                        CHOOSE FILE
+                    </span>
+
+                </label>
+
+                <input
+                    id="document-upload"
+                    type="file"
+                    name="document"
+                    accept=".pdf,.txt,.docx"
+                    hidden
+                    onchange="this.form.submit()"
+                >
+
+            </form>
+
+            {% endif %}
+
+        </section>
+
+
+
+        <!-- DOCUMENTS -->
+
+        <section class="sidebar-section documents-section">
+
+            <div class="section-heading-row">
+
+                <div class="section-title">
+                    DOCUMENTS · {{ documents|length }}
+                </div>
+
+                {% if current_document %}
+
+                <form
+                    method="post"
+                    action="{{ url_for('select_all_documents') }}"
+                >
+
                     <button
                         type="submit"
-                        class="full-btn purple"
+                        class="text-button"
                     >
-                        {% if ml_status.available %}
-                            Retrain ML Intent Model
-                        {% else %}
-                            Train ML Intent Model
-                        {% endif %}
+                        ALL
                     </button>
+
                 </form>
-            {% endif %}
 
-            <h2 style="margin-top: 25px;">
-                Documents
-            </h2>
+                {% endif %}
 
-            {% if current_user.role == "admin" %}
-                <form
-                    method="POST"
-                    action="{{ url_for(
-                        'upload_document'
-                    ) }}"
-                    enctype="multipart/form-data"
+            </div>
+
+
+            <!-- ALL DOCUMENTS -->
+
+            <form
+                method="post"
+                action="{{ url_for('select_all_documents') }}"
+            >
+
+                <button
+                    type="submit"
+                    class="
+                        doc-item
+                        {% if not current_document %}
+                            active
+                        {% endif %}
+                    "
                 >
-                    <b>Upload PDF/TXT/DOCX</b><br><br>
+
+                    <span class="doc-checkbox">
+                        {% if not current_document %}
+                            ✓
+                        {% endif %}
+                    </span>
+
+                    <span class="doc-name">
+                        All Documents
+                    </span>
+
+                </button>
+
+            </form>
+
+
+            <!-- DOCUMENT LIST -->
+
+            {% for doc in documents %}
+
+            <div class="document-row">
+
+                <form
+                    method="post"
+                    action="{{ url_for(
+                        'select_document',
+                        filename=doc
+                    ) }}"
+                    class="document-select-form"
+                >
+
+                    <button
+                        type="submit"
+                        class="
+                            doc-item
+                            {% if current_document == doc %}
+                                active
+                            {% endif %}
+                        "
+                        title="{{ doc }}"
+                    >
+
+                        <span class="doc-checkbox">
+
+                            {% if current_document == doc %}
+                                ✓
+                            {% endif %}
+
+                        </span>
+
+                        <span class="doc-icon">
+                            ▤
+                        </span>
+
+                        <span class="doc-name">
+                            {{ doc }}
+                        </span>
+
+                    </button>
+
+                </form>
+
+
+                {% if current_user.role == "admin" %}
+
+                <form
+                    method="post"
+                    action="{{ url_for(
+                        'delete_document',
+                        filename=doc
+                    ) }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="doc-delete"
+                        title="Delete document"
+                        onclick="
+                            return confirm(
+                                'Delete this document?'
+                            );
+                        "
+                    >
+                        ×
+                    </button>
+
+                </form>
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+
+
+        <!-- CHATS -->
+
+        <section class="sidebar-section chat-list-section">
+
+            <div class="section-heading-row">
+
+                <div class="section-title">
+                    CHATS · {{ chat_sessions|length }}
+                </div>
+
+            </div>
+
+
+            <form
+                method="post"
+                action="{{ url_for('new_chat') }}"
+            >
+
+                <button
+                    type="submit"
+                    class="new-chat-btn"
+                >
+                    ＋ NEW CHAT
+                </button>
+
+            </form>
+
+
+            <div class="chat-list">
+
+                {% for chat in chat_sessions %}
+
+                <form
+                    method="post"
+                    action="{{ url_for(
+                        'select_chat',
+                        chat_id=chat.id
+                    ) }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="
+                            chat-item
+                            {% if active_chat_id == chat.id %}
+                                active
+                            {% endif %}
+                        "
+                    >
+
+                        <span class="chat-icon">
+                            ▢
+                        </span>
+
+                        <span class="chat-info">
+
+                            <strong>
+                                {{ chat.title }}
+                            </strong>
+
+                            <small>
+                                {{ chat.messages|length }}
+                                message{% if chat.messages|length != 1 %}s{% endif %}
+                            </small>
+
+                        </span>
+
+                    </button>
+
+                </form>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        {% if current_user.role == "admin" %}
+
+            <section class="sidebar-section admin-users-section">
+
+                <div class="section-heading-row">
+                    <div class="section-title">
+                        USER MANAGEMENT
+                    </div>
+
+                    <span class="user-count">
+                        {{ users|length }} USERS
+                    </span>
+                </div>
+
+
+                <!-- CREATE USER -->
+
+                <form
+                    method="post"
+                    action="{{ url_for('create_user') }}"
+                    class="create-user-form"
+                >
 
                     <input
-                        type="file"
-                        name="document"
-                        accept=".pdf,.txt,.docx"
+                        type="text"
+                        name="new_username"
+                        placeholder="Username"
+                        autocomplete="off"
                         required
                     >
 
+                    <input
+                        type="password"
+                        name="new_password"
+                        placeholder="Password (minimum 6 characters)"
+                        minlength="6"
+                        required
+                    >
+
+                    <select name="new_role">
+
+                        <option value="user">
+                            User
+                        </option>
+
+                        <option value="admin">
+                            Admin
+                        </option>
+
+                    </select>
+
                     <button
                         type="submit"
-                        class="full-btn success"
+                        class="create-user-btn"
                     >
-                        Upload + Rebuild Store
+                        + CREATE USER
                     </button>
+
                 </form>
 
-                <form
-                    method="POST"
-                    action="{{ url_for('rebuild_store') }}"
-                >
-                    <button
-                        type="submit"
-                        class="full-btn"
-                    >
-                        Rebuild Vector Store
-                    </button>
-                </form>
-            {% else %}
-                <div class="message notice">
-You are logged in as a user. You can ask questions and view documents, but only an admin can upload, delete, rebuild documents, or train the ML model.
+
+                <!-- EXISTING USERS -->
+
+                <div class="existing-users-title">
+                    EXISTING USERS
                 </div>
-            {% endif %}
 
-            <div class="doc-list">
-                <b>Available Documents:</b>
 
-                {% if documents %}
-                    {% for doc in documents %}
-                        <div class="doc-item">
-                            <span class="doc-name">
-                                📄 {{ doc }}
-                            </span>
+                <div class="users-list">
 
-                            {% if current_user.role == "admin" %}
-                                <form
-                                    method="POST"
-                                    action="{{ url_for(
-                                        'delete_document',
-                                        filename=doc
-                                    ) }}"
-                                    onsubmit="return confirmDeleteDocument(
-                                        '{{ doc|e }}'
-                                    );"
-                                >
-                                    <button
-                                        type="submit"
-                                        class="delete-btn"
-                                    >
-                                        Delete
-                                    </button>
-                                </form>
-                            {% endif %}
+                    {% for user in users %}
+
+                    <div class="user-management-row">
+
+                        <div class="managed-user-info">
+
+                            <div class="managed-user-avatar">
+                                {{ user.username[0]|upper }}
+                            </div>
+
+                            <div class="managed-user-text">
+
+                                <strong>
+                                    {{ user.username }}
+                                </strong>
+
+                                <small>
+                                    {{ user.role }}
+                                </small>
+
+                            </div>
+
                         </div>
+
+
+                        {% if user.username != current_user.username %}
+
+                        <form
+                            method="post"
+                            action="{{ url_for(
+                                'delete_user',
+                                username=user.username
+                            ) }}"
+                        >
+
+                            <button
+                                type="submit"
+                                class="delete-user-btn"
+                                title="Delete user"
+                                onclick="
+                                    return confirm(
+                                        'Are you sure you want to delete {{ user.username }}?'
+                                    );
+                                "
+                            >
+                                ×
+                            </button>
+
+                        </form>
+
+                        {% else %}
+
+                        <span class="current-user-label">
+                            YOU
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
                     {% endfor %}
-                {% else %}
-                    <p>No documents uploaded yet.</p>
-                {% endif %}
-            </div>
 
-            {% if current_user.role == "admin" %}
-                <section class="admin-box">
-                    <h2>Admin User Control</h2>
+                </div>
 
-                    <form
-                        method="POST"
-                        action="{{ url_for('create_user') }}"
-                    >
-                        <input
-                            type="text"
-                            name="new_username"
-                            placeholder="New username"
-                            required
-                        >
+            </section>
 
-                        <input
-                            type="password"
-                            name="new_password"
-                            placeholder="Password (minimum 6 characters)"
-                            minlength="6"
-                            required
-                        >
+        {% endif %}
 
-                        <select name="new_role">
-                            <option value="user">
-                                User
-                            </option>
-                            <option value="admin">
-                                Admin
-                            </option>
-                        </select>
+        <!-- LEFT FOOTER -->
 
-                        <button
-                            type="submit"
-                            class="full-btn success"
-                        >
-                            Create User
-                        </button>
-                    </form>
+        <div class="sidebar-bottom">
 
-                    <h3>Existing Users</h3>
-
-                    {% for item in users %}
-                        <div class="user-row">
-                            <span>
-                                {{ item.username }}
-                                ({{ item.role }})
-                            </span>
-
-                            {% if item.username
-                                != current_user.username %}
-                                <form
-                                    method="POST"
-                                    action="{{ url_for(
-                                        'delete_user',
-                                        username=item.username
-                                    ) }}"
-                                    onsubmit="return confirmDeleteUser(
-                                        '{{ item.username|e }}'
-                                    );"
-                                >
-                                    <button
-                                        type="submit"
-                                        class="delete-btn"
-                                    >
-                                        Delete
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </section>
-            {% endif %}
-
-            <h2 style="margin-top: 25px;">
-                Suggested Questions
-            </h2>
-
-            <button
-                type="button"
-                class="question-btn"
-                onclick="setQuestion('What is RAG?')"
+            <!-- Available to both ADMIN and USER -->
+            <form
+                method="post"
+                action="{{ url_for('rebuild_store') }}"
             >
-                What is RAG?
-            </button>
-
-            <button
-                type="button"
-                class="question-btn"
-                onclick="setQuestion(
-                    'Which file types are supported?'
-                )"
-            >
-                Which file types are supported?
-            </button>
-
-            <button
-                type="button"
-                class="question-btn"
-                onclick="setQuestion(
-                    'What is chunking?'
-                )"
-            >
-                What is chunking?
-            </button>
-
-            <button
-                type="button"
-                class="question-btn"
-                onclick="setQuestion(
-                    'How are relevant chunks retrieved?'
-                )"
-            >
-                How are relevant chunks retrieved?
-            </button>
-
-            <button
-                type="button"
-                class="question-btn"
-                onclick="setQuestion(
-                    'Why is similarity score zero?'
-                )"
-            >
-                Why is similarity score zero?
-            </button>
+                <button
+                    type="submit"
+                    class="secondary-button"
+                    title="Rebuild vector store from all current documents"
+                    onclick="
+                        return confirm(
+                            'Rebuild the vector store from all current documents?'
+                        );
+                    "
+                >
+                    ↻ Rebuild Vector Store
+                </button>
+            </form>
 
             <form
-                method="POST"
+                method="post"
                 action="{{ url_for('download_chat') }}"
             >
-                <button
-                    type="submit"
-                    class="full-btn gray"
-                >
-                    Download My Chat History
+                <button class="secondary-button">
+                    Download Chat
                 </button>
             </form>
 
+
             <form
-                method="POST"
+                method="post"
                 action="{{ url_for('clear_chat') }}"
             >
-                <button
-                    type="submit"
-                    class="full-btn danger"
-                >
-                    Clear My Chat
+                <button class="clear-button">
+                    Clear Chat
                 </button>
             </form>
-        </aside>
 
-        <section class="chat-box">
-            <h2>Ask Question</h2>
+        </div>
 
-            <form
-                method="POST"
-                action="{{ url_for('home') }}"
-            >
-                <textarea
-                    id="question"
-                    name="question"
-                    placeholder="Ask anything from uploaded documents..."
-                    required
-                >{{ question }}</textarea>
+    </aside>
 
-                <label for="top_k">
-                    <b>Maximum Top K Chunks:</b>
-                </label>
 
-                <select id="top_k" name="top_k">
-                    {% for option in [1, 2, 3, 5] %}
+
+    <!-- =================================================
+         CENTER CHAT
+    ================================================== -->
+
+    <main class="center-panel">
+
+
+        <!-- CHAT HEADER -->
+
+        <div class="chat-header">
+
+            <div>
+
+                <small>
+                    SESSION
+                </small>
+
+                <h2>
+                    {{ active_chat_title }}
+                </h2>
+
+            </div>
+
+
+            <div class="chat-header-right">
+
+                <span class="document-scope">
+
+                    {% if current_document %}
+                        1 DOC SCOPED
+                    {% else %}
+                        {{ documents|length }} DOCS
+                    {% endif %}
+
+                </span>
+
+
+                <form
+                    method="post"
+                    action="{{ url_for('set_model') }}"
+                >
+
+                    <select
+                        name="model"
+                        onchange="this.form.submit()"
+                        class="model-select"
+                    >
+
+                        {% for model in model_options %}
+
                         <option
-                            value="{{ option }}"
-                            {% if selected_top_k == option %}
+                            value="{{ model.value }}"
+                            {% if selected_model == model.value %}
                                 selected
                             {% endif %}
                         >
-                            {{ option }}
+                            {{ model.label }}
                         </option>
-                    {% endfor %}
-                </select>
 
-                <button type="submit">
-                    Ask with ML + RAG
+                        {% endfor %}
+
+                    </select>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- CHAT MESSAGES -->
+           <div class="messages-area" id="messagesArea">
+                {% if not messages %}
+                    <div class="empty-chat">
+                        <div class="empty-icon">▣</div>
+
+                        <h3>
+                            Ask questions about your documents
+                        </h3>
+
+                        <p>
+                            Select documents and ask a question
+                            to start your RAG session.
+                        </p>
+                    </div>
+                {% endif %}
+
+
+                {% for msg in messages %}
+
+                    <!-- =========================================
+                        USER MESSAGE
+                    ========================================== -->
+
+                    <div class="chat-row user-row">
+
+                        <div class="message-avatar user-avatar">
+                            ♙
+                        </div>
+
+                        <div class="message-content">
+
+                            <div class="message-role">
+                                YOU
+                            </div>
+
+                            <div class="message-text user-text">
+                                {{ msg.question }}
+                            </div>
+
+                        </div>
+
+                    </div>
+                    <!-- END USER MESSAGE -->
+
+
+                    <!-- =========================================
+                        ASSISTANT MESSAGE
+                    ========================================== -->
+
+                    <div
+                        class="chat-row assistant-row source-enabled-message"
+                        data-sources='{{ msg.sources|tojson|forceescape }}'
+                    >
+
+                        <div class="message-avatar assistant-avatar">
+                            ✦
+                        </div>
+
+                        <div class="message-content">
+
+                            <div class="message-role">
+                                ASSISTANT
+                            </div>
+
+
+                            <div class="answer-meta">
+
+                                <span>
+                                    {{ msg.intent }}
+                                </span>
+
+                                <span>
+                                    RAG: {{ msg.confidence }}
+                                </span>
+
+                                <span>
+                                    {{ msg.top_k_used }}
+                                    Source{% if msg.top_k_used != 1 %}s{% endif %}
+                                </span>
+
+                                {% if msg.generation_model_label %}
+                                <span
+                                    class="generation-model-badge"
+                                    title="Model that actually generated this answer"
+                                >
+                                    {{ msg.generation_model_label }}
+                                </span>
+                                {% elif msg.selected_model_label %}
+                                <span class="generation-model-badge">
+                                    {{ msg.selected_model_label }}
+                                </span>
+                                {% endif %}
+
+                                {% if msg.generation_fallback_used %}
+                                <span
+                                    class="generation-fallback-badge"
+                                    title="The selected provider was unavailable, so another generator answered."
+                                >
+                                    Fallback
+                                </span>
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="message-text assistant-text">
+                                {{ msg.answer }}
+                            </div>
+
+                        </div>
+
+                    </div>
+                    <!-- END ASSISTANT MESSAGE -->
+
+                {% endfor %}
+
+            </div>
+        <!-- CHAT INPUT -->
+
+        <div class="composer-wrapper">
+
+            <form
+                class="chat-input-form"
+                method="post"
+                action="{{ url_for('home') }}"
+            >
+
+                <textarea
+                    id="questionInput"
+                    name="question"
+                    placeholder="Ask a question about the selected documents..."
+                    required
+                ></textarea>
+
+
+                <input
+                    type="hidden"
+                    name="top_k"
+                    value="3"
+                >
+
+
+                <button
+                    type="submit"
+                    class="send-button"
+                    title="Send question"
+                >
+                    ➤
                 </button>
+
             </form>
 
-            <hr style="margin: 25px 0;">
 
-            {% if not chat_history %}
-                <div class="message notice">
-Welcome! Ask questions from uploaded documents.
-The ML model classifies the question intent, then RAG retrieves relevant chunks and generates an answer with citations.
-                </div>
-            {% endif %}
+            <div class="composer-help">
+                PRESS ENTER TO SEND · SHIFT+ENTER FOR NEWLINE
+            </div>
 
-            {% for chat in chat_history %}
-                <article class="chat-entry">
-                    <div class="message user-message">
-                        <div class="chat-meta">
-                            <span class="chat-number">
-                                Question {{ loop.index }}
-                            </span>
+        </div>
 
-                            {% if loop.first %}
-                                <span class="latest-badge">
-                                    Latest
-                                </span>
-                            {% endif %}
-
-                            <span class="chat-time">
-                                🕒
-                                {{ chat.time|default(
-                                    "Time unavailable",
-                                    true
-                                ) }}
-                            </span>
-                        </div>
-
-                        <b>You:</b>
-                        <div class="message-text">
-                            {{ chat.question }}
-                        </div>
-                    </div>
-
-                    <div class="message bot-message">
-                        <span class="confidence">
-                            RAG Confidence:
-                            {{ chat.confidence }}
-                        </span>
-
-                        <span class="ml-badge">
-                            ML Intent:
-                            {{ chat.intent|default(
-                                "General",
-                                true
-                            ) }}
-                        </span>
-
-                        <span class="ml-badge">
-                            ML Confidence:
-                            {{ chat.intent_confidence
-                                |default(0, true) }}%
-                        </span>
-                        {% if chat.intent_low_confidence|default(false) %}
-                            <span class="ml-badge ml-warning">
-                                Low-confidence prediction
-                            </span>
-                        {% endif %}
-
-                        <span class="ml-badge">
-                            Chunks Used:
-                            {{ chat.top_k_used
-                                |default(3, true) }}
-                        </span>
-
-                        {% if chat.ml_model_available is defined
-                            and chat.ml_model_available is false %}
-                            <span class="ml-badge ml-warning">
-                                ML model not trained
-                            </span>
-                        {% endif %}
-
-                        <b class="answer-label">
-                            Answer:
-                        </b>
-
-                        <div class="answer-text">
-                            {{ chat.answer }}
-                        </div>
-                        {% if chat.sources %}
-                            <details>
-                                <summary>
-                                    View Source Chunks
-                                </summary>
-
-                                {% for source in chat.sources %}
-                                    <div class="source">
-                                        <b>{{ source.filename }}</b>
-                                        | Chunk ID: {{ source.chunk_id }}
-                                        | Score: {{ source.score }}
-                                        <br>
-
-                                        <b>Matched Keywords:</b>
-                                        {{ source.matched_keywords or "None" }}
-                                        <br><br>
-
-                                        {{ source.text }}
-                                    </div>
-                                {% endfor %}
-                            </details>
-                        {% endif %}
-                       
-                    </div>
-                </article>
-            {% endfor %}
-        </section>
     </main>
 
-    <footer>
-        Built with Python, Flask, NumPy, TF-IDF,
-        Logistic Regression, Google Gemini API,
-        JSON Vector Store, Cosine Similarity,
-        Citations and Role-Based Access Control
-    </footer>
+
+
+    <!-- =================================================
+         RIGHT SOURCES
+    ================================================== -->
+
+    <aside class="right-panel">
+
+        <div class="sources-header">
+            <div class="section-title">
+                SOURCES ·
+                <span id="sourceCount">
+                    {{ current_sources|length }}
+                </span>
+            </div>
+        </div>
+
+        <div id="dynamicSources">
+
+            {% if current_sources %}
+
+                {% for source in current_sources %}
+
+                <div class="source-card">
+
+                    <div class="source-top">
+                        <span class="source-number">
+                            [{{ loop.index }}]
+                        </span>
+
+                        <span class="source-score">
+                            score {{ source.score }}
+                        </span>
+                    </div>
+
+                    <div class="source-file">
+                        ▤ {{ source.filename }}
+                    </div>
+
+                    <div class="source-meta">
+
+                        {% if source.page_number %}
+                            Page {{ source.page_number }} ·
+                        {% endif %}
+
+                        Chunk {{ source.chunk_id }}
+
+                        {% if source.matched_keywords %}
+                            · {{ source.matched_keywords }}
+                        {% endif %}
+
+                    </div>
+
+                    <div class="source-text">
+                        {{ source.text }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-sources">
+                    Sources used by the latest answer
+                    will appear here.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </aside>
+
+</div>
+
+
+
+<script>
+
+const questionInput = document.getElementById(
+    "questionInput"
+);
+
+const chatForm = document.querySelector(
+    ".chat-input-form"
+);
+
+
+questionInput.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Enter"
+            &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            if (
+                questionInput.value.trim()
+            ) {
+                chatForm.submit();
+            }
+        }
+    }
+);
+
+
+// Scroll to latest message.
+const messagesArea = document.getElementById(
+    "messagesArea"
+);
+
+if (messagesArea) {
+    messagesArea.scrollTop =
+        messagesArea.scrollHeight;
+}
+
+document.querySelectorAll(
+    ".source-enabled-message"
+).forEach(function(message) {
+
+    message.addEventListener(
+        "click",
+        function() {
+
+            const sources = JSON.parse(
+                this.dataset.sources || "[]"
+            );
+
+            renderSources(sources);
+        }
+    );
+
+});
+
+
+function escapeHtml(value) {
+
+    const div = document.createElement("div");
+
+    div.textContent = value || "";
+
+    return div.innerHTML;
+}
+
+
+function renderSources(sources) {
+
+    const container =
+        document.getElementById(
+            "dynamicSources"
+        );
+
+    const count =
+        document.getElementById(
+            "sourceCount"
+        );
+
+    count.textContent = sources.length;
+
+    if (!sources.length) {
+
+        container.innerHTML = `
+            <div class="empty-sources">
+                No supporting sources were found
+                for this answer.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML = sources.map(
+        function(source, index) {
+
+            return `
+                <div class="source-card">
+
+                    <div class="source-top">
+
+                        <span class="source-number">
+                            [${index + 1}]
+                        </span>
+
+                        <span class="source-score">
+                            score ${source.score}
+                        </span>
+
+                    </div>
+
+                    <div class="source-file">
+                        ▤ ${escapeHtml(
+                            source.filename
+                        )}
+                    </div>
+
+                    <div class="source-meta">
+                        ${
+                            source.page_number
+                                ? "Page " +
+                                  escapeHtml(
+                                      String(
+                                          source.page_number
+                                      )
+                                  ) +
+                                  " · "
+                                : ""
+                        }
+                        Chunk ${escapeHtml(
+                            String(source.chunk_id)
+                        )}
+                        ${
+                            source.matched_keywords
+                                ? " · " +
+                                  escapeHtml(
+                                      source.matched_keywords
+                                  )
+                                : ""
+                        }
+                    </div>
+
+                    <div class="source-text">
+                        ${escapeHtml(
+                            source.text
+                        )}
+                    </div>
+
+                </div>
+            `;
+        }
+    ).join("");
+}
+
+</script>
+
+
 </body>
 </html>

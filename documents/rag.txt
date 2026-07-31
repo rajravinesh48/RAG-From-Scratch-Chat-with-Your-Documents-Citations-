@@ -1,0 +1,79 @@
+RAG FROM SCRATCH - TEST KNOWLEDGE DOCUMENT
+
+1. What is RAG?
+RAG means Retrieval Augmented Generation.
+
+2. How does RAG work?
+RAG works by retrieving relevant document chunks first and then sending those chunks with the user question to a language model to generate a grounded answer.
+
+3. What is chunking?
+Chunking means splitting a large document into smaller meaningful pieces called chunks.
+
+4. Why is chunking used?
+Chunking is used so that the system can search smaller parts of a document and retrieve only the most relevant information.
+
+5. What is an embedding vector?
+An embedding vector is a numeric representation of text meaning.
+
+6. What is TF-IDF?
+TF-IDF stands for Term Frequency-Inverse Document Frequency. It converts text into numeric vectors by measuring how important words are in a document.
+
+7. What is cosine similarity?
+Cosine similarity measures how similar two vectors are by comparing the angle between them.
+
+8. How are relevant chunks retrieved?
+The user question is converted into a vector. The system compares the question vector with stored chunk vectors using cosine similarity. The chunks with the highest similarity scores are retrieved.
+
+9. What is the vector store?
+The vector store contains document chunk text, filename, chunk ID, page number when available, and the vector representation of each chunk.
+
+10. Which file types are supported?
+The application supports PDF, DOCX, and TXT files.
+
+11. What happens after a document is uploaded?
+After a document is uploaded, its text is extracted, divided into chunks, converted into vectors, and stored in the vector store.
+
+12. What happens when a user asks a question?
+The question is converted into a vector, relevant chunks are retrieved using cosine similarity, and the retrieved chunks are sent to the selected language model to generate the final answer.
+
+13. Which local LLM is used in this project?
+The project uses Gemma 3 4B through Ollama as the default local language model.
+
+14. What is Ollama used for?
+Ollama is used to run the Gemma 3 4B language model locally on the computer without requiring a paid cloud API.
+
+15. What is Gemini used for?
+Gemini is an optional cloud language model provider and can be used as a fallback or alternative model.
+
+16. Does the language model use outside knowledge?
+The language model is instructed to answer only from the retrieved document context and not to use outside knowledge.
+
+17. How are citations shown?
+Citations show the source filename, chunk ID, similarity score, and PDF page number when available.
+
+18. What happens when no relevant information is found?
+The system returns: I could not find enough relevant information in the uploaded documents.
+
+19. What is intent classification?
+Intent classification identifies the type of question asked by the user.
+
+20. Which machine learning algorithm is used for intent classification?
+The project uses Logistic Regression with TF-IDF features for intent classification.
+
+21. What are the intent categories?
+The intent categories are definition, process, file_support, component, comparison, troubleshooting, and general.
+
+22. What is the complete RAG pipeline?
+The complete RAG pipeline is: document upload, text extraction, chunking, vectorization, vector store creation, question vectorization, cosine similarity retrieval, relevant chunk selection, language model generation, and citation display.
+
+23. Why are citations important?
+Citations help the user verify which document, page, and chunk were used to generate an answer.
+
+24. What is the role of the retriever?
+The retriever finds the most relevant document chunks for a user question.
+
+25. What is the role of the language model?
+The language model uses the retrieved chunks to produce a clear natural-language answer.
+
+IMPORTANT TEST NOTE:
+This document intentionally contains no information about birds, animals, cricket, weather, or current events. Questions about those topics should return the no-context message.

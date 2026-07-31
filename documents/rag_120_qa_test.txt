@@ -1,0 +1,528 @@
+SCHOLAR RAG - EXTENDED QUESTION AND ANSWER KNOWLEDGE BASE
+====================================================================
+
+This document is designed for testing the Scholar RAG application.
+It contains many explicit question-and-answer facts so that retrieval
+and answer generation can be tested with predictable results.
+
+QUESTION 1
+Q: What is RAG?
+A: RAG stands for Retrieval Augmented Generation.
+
+QUESTION 2
+Q: What does Retrieval Augmented Generation do?
+A: Retrieval Augmented Generation retrieves relevant information from documents and uses that information to help a language model generate a grounded answer.
+
+QUESTION 3
+Q: Why is RAG useful?
+A: RAG is useful because it allows a language model to answer questions using information from private or uploaded documents instead of relying only on its general training knowledge.
+
+QUESTION 4
+Q: What are the main stages of RAG?
+A: The main stages are document ingestion, text extraction, chunking, vectorization, retrieval, language model generation, and citation display.
+
+QUESTION 5
+Q: What is document ingestion?
+A: Document ingestion is the process of reading uploaded documents and preparing their content for search and retrieval.
+
+QUESTION 6
+Q: What happens after a document is uploaded?
+A: The document text is extracted, divided into chunks, converted into vectors, and stored in the vector store.
+
+QUESTION 7
+Q: What is text extraction?
+A: Text extraction is the process of reading textual content from files such as PDF, DOCX, and TXT.
+
+QUESTION 8
+Q: Which file types are supported?
+A: The application supports PDF, DOCX, and TXT files.
+
+QUESTION 9
+Q: Can the application read PDF files?
+A: Yes. PDF files are supported and their text is extracted page by page.
+
+QUESTION 10
+Q: Can the application read DOCX files?
+A: Yes. DOCX files are supported.
+
+QUESTION 11
+Q: Can the application read TXT files?
+A: Yes. TXT files are supported.
+
+QUESTION 12
+Q: What is chunking?
+A: Chunking is the process of splitting a large document into smaller pieces called chunks.
+
+QUESTION 13
+Q: Why is chunking required?
+A: Chunking makes retrieval more accurate because the system can search smaller sections of a document instead of searching the entire document at once.
+
+QUESTION 14
+Q: What is chunk size?
+A: Chunk size is the amount of text placed in each chunk.
+
+QUESTION 15
+Q: What is chunk overlap?
+A: Chunk overlap is the amount of repeated text shared between neighboring chunks.
+
+QUESTION 16
+Q: Why is chunk overlap useful?
+A: Chunk overlap helps preserve context that may otherwise be split between two chunks.
+
+QUESTION 17
+Q: What is a chunk ID?
+A: A chunk ID is a unique identifier assigned to a chunk within a document.
+
+QUESTION 18
+Q: What is a page chunk ID?
+A: A page chunk ID identifies a chunk within a particular PDF page.
+
+QUESTION 19
+Q: What is an embedding?
+A: An embedding is a numeric representation of text.
+
+QUESTION 20
+Q: What is an embedding vector?
+A: An embedding vector is a list of numbers that represents the meaning or features of text.
+
+QUESTION 21
+Q: Why are vectors used?
+A: Vectors allow text to be compared mathematically.
+
+QUESTION 22
+Q: What is TF-IDF?
+A: TF-IDF stands for Term Frequency-Inverse Document Frequency.
+
+QUESTION 23
+Q: What does TF-IDF do?
+A: TF-IDF converts text into numeric vectors by measuring how important each word is in a document or chunk.
+
+QUESTION 24
+Q: What is term frequency?
+A: Term frequency measures how often a word appears in a document or chunk.
+
+QUESTION 25
+Q: What is inverse document frequency?
+A: Inverse document frequency gives more importance to words that are uncommon across the document collection.
+
+QUESTION 26
+Q: What is cosine similarity?
+A: Cosine similarity measures the similarity between two vectors by comparing the angle between them.
+
+QUESTION 27
+Q: What is a similarity score?
+A: A similarity score indicates how closely a retrieved chunk matches the user question.
+
+QUESTION 28
+Q: What does a higher similarity score mean?
+A: A higher similarity score means the chunk is more relevant to the user question.
+
+QUESTION 29
+Q: How are relevant chunks retrieved?
+A: The question is converted into a vector and compared with stored chunk vectors using cosine similarity. The chunks with the highest scores are retrieved.
+
+QUESTION 30
+Q: What is the retriever?
+A: The retriever is the component that finds the most relevant document chunks for a user question.
+
+QUESTION 31
+Q: What is top K?
+A: Top K is the maximum number of highest scoring chunks selected by the retriever.
+
+QUESTION 32
+Q: What does top K equal to 3 mean?
+A: Top K equal to 3 means the retriever returns up to three of the most relevant chunks.
+
+QUESTION 33
+Q: What is a vector store?
+A: A vector store keeps document chunks, vector representations, and related metadata used during retrieval.
+
+QUESTION 34
+Q: What information is stored in the vector store?
+A: The vector store contains chunk text, filename, chunk ID, page number when available, and vector data.
+
+QUESTION 35
+Q: Where is the vector store saved?
+A: The project saves its vector store in a local JSON file.
+
+QUESTION 36
+Q: What is store.json?
+A: store.json is the local JSON file used to store vocabulary, IDF values, chunks, metadata, and embeddings.
+
+QUESTION 37
+Q: What is vector store rebuild?
+A: Vector store rebuild recreates the vector store from the documents currently available in the documents folder.
+
+QUESTION 38
+Q: When should the vector store be rebuilt?
+A: The vector store should be rebuilt after documents are added, removed, or changed.
+
+QUESTION 39
+Q: Can a normal user rebuild the vector store?
+A: Yes. In this project, both administrators and normal logged-in users can rebuild the vector store.
+
+QUESTION 40
+Q: Can a normal user upload documents?
+A: No. Document upload is restricted to administrators.
+
+QUESTION 41
+Q: Can a normal user delete documents?
+A: No. Document deletion is restricted to administrators.
+
+QUESTION 42
+Q: What is the role of the language model?
+A: The language model converts retrieved document context into a clear natural-language answer.
+
+QUESTION 43
+Q: Which local language model is used?
+A: The project uses Gemma 3 4B through Ollama as the default local language model.
+
+QUESTION 44
+Q: What is Gemma 3 4B?
+A: Gemma 3 4B is a language model that can run locally through Ollama.
+
+QUESTION 45
+Q: What is Ollama?
+A: Ollama is software used to run language models locally on a computer.
+
+QUESTION 46
+Q: Why is Ollama used in this project?
+A: Ollama provides a free local language model option without relying on cloud API quotas.
+
+QUESTION 47
+Q: Does Ollama require a cloud API key?
+A: No. A normal local Ollama installation does not require a cloud API key.
+
+QUESTION 48
+Q: What is the default Ollama API address?
+A: The default local Ollama API address is http://localhost:11434.
+
+QUESTION 49
+Q: Which Ollama model is configured?
+A: The configured local model is gemma3:4b.
+
+QUESTION 50
+Q: What happens if Ollama is unavailable?
+A: If Ollama is unavailable, the project can try Gemini when Gemini is enabled and configured.
+
+QUESTION 51
+Q: What happens if Ollama and Gemini are both unavailable?
+A: The project uses a local extractive fallback that selects relevant text from retrieved chunks.
+
+QUESTION 52
+Q: Is the local extractive fallback an LLM?
+A: No. The local extractive fallback is not a language model.
+
+QUESTION 53
+Q: What is Gemini used for?
+A: Gemini is an optional cloud language model provider in the project.
+
+QUESTION 54
+Q: Is Gemini required?
+A: No. Gemini is optional because the project can use Ollama as the main local language model.
+
+QUESTION 55
+Q: What happens when Gemini quota is exhausted?
+A: The project can use Ollama or the local extractive fallback instead of showing a quota error in the final answer.
+
+QUESTION 56
+Q: Does the project show which model generated an answer?
+A: Yes. Each answer can show the model or fallback that actually generated it.
+
+QUESTION 57
+Q: What does Ollama Gemma 3 4B badge mean?
+A: It means the answer was generated by the Gemma 3 4B model running locally through Ollama.
+
+QUESTION 58
+Q: What does Local Extractive Fallback mean?
+A: It means both language model providers were unavailable and the system produced an answer directly from retrieved text.
+
+QUESTION 59
+Q: What does No LLM No Context mean?
+A: It means no useful document context was found, so no language model was called.
+
+QUESTION 60
+Q: Does the language model answer from outside knowledge?
+A: The language model is instructed to answer only from the retrieved document context.
+
+QUESTION 61
+Q: What happens if the document does not contain the answer?
+A: The system returns: I could not find enough relevant information in the uploaded documents.
+
+QUESTION 62
+Q: Why is a no-context response important?
+A: It reduces hallucination by preventing unsupported answers when relevant document information is missing.
+
+QUESTION 63
+Q: What is grounding?
+A: Grounding means generating an answer using information retrieved from trusted source documents.
+
+QUESTION 64
+Q: What is hallucination?
+A: Hallucination is when a language model produces unsupported or invented information.
+
+QUESTION 65
+Q: How does this project reduce hallucination?
+A: The project retrieves relevant chunks first and instructs the language model to answer only from those chunks.
+
+QUESTION 66
+Q: What are citations?
+A: Citations show the sources used to support an answer.
+
+QUESTION 67
+Q: What information is displayed in a source citation?
+A: A source citation can display the filename, PDF page number, chunk ID, similarity score, and source text.
+
+QUESTION 68
+Q: Why are citations useful?
+A: Citations allow users to verify where an answer came from.
+
+QUESTION 69
+Q: Are PDF page numbers stored?
+A: Yes. PDF text is extracted page by page so page numbers can be stored with chunks.
+
+QUESTION 70
+Q: Are page numbers available for TXT files?
+A: No. TXT files do not have reliable physical page numbers in this project.
+
+QUESTION 71
+Q: Are page numbers available for DOCX files?
+A: No. DOCX files do not have reliable physical page numbers in this implementation.
+
+QUESTION 72
+Q: What is Flask?
+A: Flask is the Python web framework used to build the project's web application.
+
+QUESTION 73
+Q: What is web_app.py?
+A: web_app.py contains the Flask routes, authentication logic, document actions, chat logic, model selection, and page rendering.
+
+QUESTION 74
+Q: What is generator.py?
+A: generator.py contains answer generation logic for Ollama, Gemini, and the local fallback.
+
+QUESTION 75
+Q: What is ingest.py?
+A: ingest.py reads supported documents, creates chunks, builds embeddings, and saves the vector store.
+
+QUESTION 76
+Q: What is extract_text.py?
+A: extract_text.py extracts text from PDF, DOCX, and TXT files.
+
+QUESTION 77
+Q: What is retriever.py?
+A: retriever.py finds relevant chunks by comparing the question with stored chunk vectors.
+
+QUESTION 78
+Q: What is embeddings.py?
+A: embeddings.py contains text tokenization and vector creation logic.
+
+QUESTION 79
+Q: What is chunker.py?
+A: chunker.py splits extracted text into smaller overlapping chunks.
+
+QUESTION 80
+Q: What is intent classification?
+A: Intent classification predicts the type of question asked by the user.
+
+QUESTION 81
+Q: Which algorithm is used for intent classification?
+A: The project uses Logistic Regression with TF-IDF features for intent classification.
+
+QUESTION 82
+Q: Which intent categories are used?
+A: The intent categories are definition, process, file_support, component, comparison, troubleshooting, and general.
+
+QUESTION 83
+Q: What does definition intent mean?
+A: Definition intent is used for questions asking what something is.
+
+QUESTION 84
+Q: What does process intent mean?
+A: Process intent is used for questions asking how something works or how something is done.
+
+QUESTION 85
+Q: What does file_support intent mean?
+A: File support intent is used for questions about supported file types.
+
+QUESTION 86
+Q: What does troubleshooting intent mean?
+A: Troubleshooting intent is used for questions about errors, failures, or fixing problems.
+
+QUESTION 87
+Q: What is intent confidence?
+A: Intent confidence indicates how certain the machine learning model is about the predicted intent.
+
+QUESTION 88
+Q: What happens when intent confidence is low?
+A: The system marks the prediction as low confidence.
+
+QUESTION 89
+Q: Why is machine learning included in the project?
+A: Machine learning is used to classify questions and help choose an appropriate retrieval depth.
+
+QUESTION 90
+Q: How does intent affect top K?
+A: Different intents can use different recommended top K values for retrieval.
+
+QUESTION 91
+Q: What is authentication?
+A: Authentication verifies the identity of a user before allowing access to the application.
+
+QUESTION 92
+Q: What user roles are available?
+A: The project has admin and user roles.
+
+QUESTION 93
+Q: What can an administrator do?
+A: An administrator can upload documents, delete documents, rebuild the vector store, manage users, ask questions, download chats, and clear chats.
+
+QUESTION 94
+Q: What can a normal user do?
+A: A normal user can select documents, ask questions, rebuild the vector store, download chats, and clear chats.
+
+QUESTION 95
+Q: Can an admin create users?
+A: Yes. Administrators can create new user accounts.
+
+QUESTION 96
+Q: Can an admin delete users?
+A: Yes. Administrators can delete other user accounts.
+
+QUESTION 97
+Q: Can an administrator delete their own logged-in account?
+A: No. The project prevents an administrator from deleting the account currently being used.
+
+QUESTION 98
+Q: How are user passwords stored?
+A: User passwords are stored as password hashes instead of plain text.
+
+QUESTION 99
+Q: What is a chat session?
+A: A chat session stores a group of questions and answers belonging to one conversation.
+
+QUESTION 100
+Q: Can the project create multiple chats?
+A: Yes. The project supports multiple chat sessions.
+
+QUESTION 101
+Q: How is a chat title created?
+A: The chat title is created from the first few words of the first question.
+
+QUESTION 102
+Q: Can chat history be downloaded?
+A: Yes. The active chat can be downloaded as a text file.
+
+QUESTION 103
+Q: What does downloaded chat history contain?
+A: Downloaded chat history can contain questions, answers, confidence, intent, sources, model information, and timestamps.
+
+QUESTION 104
+Q: Can chat history be cleared?
+A: Yes. The active chat can be cleared.
+
+QUESTION 105
+Q: Can users select a single document?
+A: Yes. A user can scope retrieval to one selected document.
+
+QUESTION 106
+Q: Can users search all documents?
+A: Yes. Selecting All Documents searches across every indexed document.
+
+QUESTION 107
+Q: What does one document scoped mean?
+A: It means retrieval is restricted to one selected document.
+
+QUESTION 108
+Q: What does all documents mean?
+A: It means retrieval can use chunks from every indexed document.
+
+QUESTION 109
+Q: What is RAG confidence?
+A: RAG confidence is a label derived from the top retrieved similarity score.
+
+QUESTION 110
+Q: What are the RAG confidence levels?
+A: The RAG confidence levels are High, Medium, Low, and No Match.
+
+QUESTION 111
+Q: When is RAG confidence High?
+A: RAG confidence is High when the top similarity score is at least 0.30.
+
+QUESTION 112
+Q: When is RAG confidence Medium?
+A: RAG confidence is Medium when the top similarity score is at least 0.10 but below 0.30.
+
+QUESTION 113
+Q: When is RAG confidence Low?
+A: RAG confidence is Low when the score is greater than zero but below 0.10.
+
+QUESTION 114
+Q: When is RAG confidence No Match?
+A: RAG confidence is No Match when no relevant supporting information is found.
+
+QUESTION 115
+Q: What is the complete project workflow?
+A: The workflow is login, document upload, text extraction, chunking, TF-IDF vectorization, vector store creation, question input, intent classification, cosine similarity retrieval, relevant chunk selection, local or cloud language model generation, and source citation display.
+
+QUESTION 116
+Q: What is the main purpose of this project?
+A: The main purpose is to build a document question-answering system that retrieves relevant information and generates grounded answers with citations.
+
+QUESTION 117
+Q: What is the project name?
+A: The project is a RAG From Scratch document question-answering application called Scholar.
+
+QUESTION 118
+Q: What is Scholar?
+A: Scholar is the web interface for the RAG From Scratch project.
+
+QUESTION 119
+Q: Why is this called RAG from scratch?
+A: It is called RAG from scratch because core steps such as text extraction, chunking, TF-IDF vectorization, cosine similarity retrieval, and citation handling are implemented directly instead of relying entirely on a RAG framework.
+
+QUESTION 120
+Q: Does the project use LangChain?
+A: No. The core RAG pipeline does not depend on LangChain.
+
+QUESTION 121
+Q: Does the project require Pinecone?
+A: No. The project uses a local JSON vector store.
+
+QUESTION 122
+Q: Does the project require ChromaDB?
+A: No. The current implementation uses its own local JSON-based vector store.
+
+QUESTION 123
+Q: Can the application work without internet when Ollama is used?
+A: Yes. After the required local Ollama model and Python dependencies are installed, local question answering can work without a cloud LLM connection.
+
+QUESTION 124
+Q: Why is a local LLM useful for a student project?
+A: A local LLM avoids cloud quota limits and demonstrates how a complete RAG pipeline can run locally.
+
+QUESTION 125
+Q: What should be tested before submission?
+A: The project should be tested for correct retrieval, no-match behavior, citations, page numbers, local LLM generation, user roles, user management, chat history, and vector store rebuild.
+
+QUESTION 126
+Q: How can retrieval quality be evaluated?
+A: Retrieval quality can be evaluated using labelled questions with expected source documents or chunks and measuring Top-1 or Top-K accuracy.
+
+QUESTION 127
+Q: What is Top-1 retrieval accuracy?
+A: Top-1 retrieval accuracy is the percentage of test questions where the correct source is the highest-ranked retrieved result.
+
+QUESTION 128
+Q: What is Top-K retrieval accuracy?
+A: Top-K retrieval accuracy is the percentage of test questions where the correct source appears anywhere within the top K retrieved results.
+
+====================================================================
+NEGATIVE TESTING
+
+This document intentionally does not provide factual answers about
+animals, sports results, weather, politics, movies, celebrities,
+medical advice, or current news.
+
+For unrelated questions, the expected system response is:
+I could not find enough relevant information in the uploaded documents.
