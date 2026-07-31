@@ -1,5 +1,27 @@
+# Secrets
+.env
+
+# Python environment
 venv/
+.venv/
+
+# Python cache
 __pycache__/
 *.pyc
-.env
-vector_store/store.json
+*.pyo
+
+# Runtime generated files
+vector_store/
+users.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bkp
+*.bak
