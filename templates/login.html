@@ -3,140 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - RAG Project</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #dbeafe, #eef2ff);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .login-box {
-            width: min(420px, 100%);
-            background: white;
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 18px 45px rgba(30, 58, 138, 0.18);
-        }
-
-        h1 {
-            text-align: center;
-            color: #1e3a8a;
-            margin: 0 0 8px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #64748b;
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            margin-top: 14px;
-            color: #334155;
-            font-weight: bold;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-top: 7px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 15px;
-        }
-
-        input:focus {
-            border-color: #2563eb;
-            outline: 3px solid rgba(37, 99, 235, 0.12);
-        }
-
-        button {
-            width: 100%;
-            margin-top: 20px;
-            padding: 12px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        .error {
-            background: #fef2f2;
-            color: #991b1b;
-            padding: 11px;
-            border-left: 4px solid #dc2626;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .demo {
-            background: #eff6ff;
-            padding: 13px;
-            border-radius: 8px;
-            margin-top: 20px;
-            color: #1e3a8a;
-            font-size: 14px;
-            line-height: 1.7;
-        }
-    </style>
+    <title>Scholar - Sign In</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
 </head>
-
 <body>
-    <main class="login-box">
-        <h1>RAG Login</h1>
-        <div class="subtitle">
-            Admin and User Control Panel
+
+<div class="login-page">
+
+    <section class="login-visual-panel">
+        <div class="visual-top">
+            <div class="brand-mark">▣</div>
+            <div>
+                <div class="brand-eyebrow">RAG · FROM SCRATCH</div>
+                <div class="brand-name">Scholar</div>
+            </div>
         </div>
 
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
+        <div class="visual-content">
+            <span class="visual-kicker">DOCUMENT INTELLIGENCE</span>
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <label for="username">Username</label>
-            <input
-                id="username"
-                type="text"
-                name="username"
-                placeholder="Enter username"
-                required
-                autofocus
-            >
+            <h1>
+                Ask your documents.<br>
+                Get grounded answers.
+            </h1>
 
-            <label for="password">Password</label>
-            <input
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                required
-            >
+            <p>
+                Scholar combines retrieval, citations and local language models
+                to answer questions directly from your uploaded documents.
+            </p>
 
-            <button type="submit">Login</button>
-        </form>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">◎</div>
+                    <div>
+                        <strong>Grounded RAG</strong>
+                        <span>Answers are generated from retrieved source context.</span>
+                    </div>
+                </div>
 
-        <div class="demo">
-            <b>Demo accounts</b><br>
-            Admin: admin / admin123<br>
-            User: user / user123
+                <div class="feature-card">
+                    <div class="feature-icon">◫</div>
+                    <div>
+                        <strong>Source Citations</strong>
+                        <span>See document, chunk and PDF page behind every answer.</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">✦</div>
+                    <div>
+                        <strong>Local LLM Ready</strong>
+                        <span>Supports Ollama + Gemma with optional Gemini fallback.</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </main>
+
+        <div class="visual-footer">
+            <span class="status-dot"></span>
+            Scholar RAG Workspace
+        </div>
+    </section>
+
+
+    <section class="login-form-panel">
+
+        <div class="mobile-brand">
+            <div class="brand-mark">▣</div>
+            <div>
+                <div class="brand-eyebrow">RAG · FROM SCRATCH</div>
+                <div class="brand-name">Scholar</div>
+            </div>
+        </div>
+
+        <div class="login-card">
+
+            <div class="login-heading">
+                <span class="login-label">WELCOME BACK</span>
+                <h2>Sign in to Scholar</h2>
+                <p>
+                    Access your document workspace and continue your RAG sessions.
+                </p>
+            </div>
+
+            {% if error %}
+            <div class="login-error">
+                <span class="error-icon">!</span>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form
+                method="post"
+                action="{{ url_for('login') }}"
+                class="login-form"
+                id="loginForm"
+            >
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+
+                    <div class="input-wrap">
+                        <span class="input-icon">♙</span>
+
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Enter your username"
+                            autocomplete="username"
+                            autofocus
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+
+                    <div class="input-wrap">
+                        <span class="input-icon">◈</span>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="password-toggle"
+                            id="passwordToggle"
+                            aria-label="Show password"
+                        >
+                            SHOW
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    class="login-button"
+                    id="loginButton"
+                >
+                    <span>SIGN IN</span>
+                    <span class="button-arrow">→</span>
+                </button>
+            </form>
+
+            <div class="login-security">
+                <span class="security-icon">◇</span>
+                <span>
+                    Secure role-based access for administrators and users.
+                </span>
+            </div>
+        </div>
+
+        <div class="login-page-footer">
+            Scholar · RAG From Scratch
+        </div>
+    </section>
+
+</div>
+
+<script>
+const passwordInput = document.getElementById("password");
+const passwordToggle = document.getElementById("passwordToggle");
+const loginForm = document.getElementById("loginForm");
+const loginButton = document.getElementById("loginButton");
+
+passwordToggle.addEventListener("click", function () {
+    const isPassword = passwordInput.type === "password";
+
+    passwordInput.type = isPassword ? "text" : "password";
+    passwordToggle.textContent = isPassword ? "HIDE" : "SHOW";
+});
+
+loginForm.addEventListener("submit", function () {
+    loginButton.disabled = true;
+    loginButton.innerHTML = `
+        <span>SIGNING IN...</span>
+        <span class="login-spinner"></span>
+    `;
+});
+</script>
+
 </body>
 </html>
