@@ -1,0 +1,856 @@
+ANIMALS, BIRDS, PETS AND AQUATIC LIFE
+EXTENDED QUESTION-ANSWER KNOWLEDGE BASE
+
+This file is designed for RAG testing. It uses short, direct question-answer
+pairs and repeated natural-language variants so retrieval works well for
+questions such as "what is fish", "where do ducks live", "what is dog",
+"what is cow", and similar queries.
+
+============================================================
+SECTION 1 - BASIC ANIMAL DEFINITIONS
+============================================================
+
+Q: What is an animal?
+A: An animal is a living organism that obtains energy by consuming food and
+can usually respond actively to its environment.
+
+Q: What are animals?
+A: Animals are living organisms that include mammals, birds, reptiles,
+amphibians, fish, insects, and many other groups.
+
+Q: What is a mammal?
+A: A mammal is a warm-blooded vertebrate that usually has hair or fur, and
+female mammals produce milk to feed their young.
+
+Q: What is a bird?
+A: A bird is a warm-blooded vertebrate with feathers, a beak, wings, and eggs.
+
+Q: What is a fish?
+A: A fish is an aquatic vertebrate that usually breathes through gills and
+moves through water using fins.
+
+Q: What are fish?
+A: Fish are animals that live in water. Most fish breathe through gills and
+use fins for movement.
+
+Q: Is fish an animal?
+A: Yes. A fish is an animal and belongs to the group of aquatic vertebrates.
+
+Q: What is a reptile?
+A: A reptile is a vertebrate animal with scales or scaly skin. Examples
+include snakes, lizards, crocodiles, and turtles.
+
+Q: What is an amphibian?
+A: An amphibian is a vertebrate that usually spends part of its life in water
+and part on land. Frogs are common amphibians.
+
+Q: What is an insect?
+A: An insect is an invertebrate with six legs and three main body sections:
+head, thorax, and abdomen.
+
+Q: What is an arachnid?
+A: An arachnid is an invertebrate with eight legs. Spiders and scorpions are
+arachnids.
+
+============================================================
+SECTION 2 - PET ANIMALS
+============================================================
+
+Q: What is a dog?
+A: A dog is a domesticated mammal commonly kept as a pet, companion, working
+animal, or guard animal.
+
+Q: Is a dog a mammal?
+A: Yes. A dog is a mammal.
+
+Q: What does a dog eat?
+A: Domestic dogs eat nutritionally balanced dog food that commonly contains
+animal proteins, fats, carbohydrates, vitamins, and minerals.
+
+Q: Where do pet dogs live?
+A: Pet dogs usually live with humans in homes, farms, shelters, or other safe
+domestic environments.
+
+Q: What is a cat?
+A: A cat is a small domesticated mammal commonly kept as a pet.
+
+Q: Is a cat a mammal?
+A: Yes. A cat is a mammal.
+
+Q: What do cats eat?
+A: Domestic cats need animal-based nutrients and are normally fed balanced
+cat food.
+
+Q: Where do pet cats live?
+A: Pet cats usually live in homes or other safe domestic environments with
+their owners.
+
+Q: What is a rabbit?
+A: A rabbit is a small herbivorous mammal with long ears and strong hind legs.
+
+Q: What do rabbits eat?
+A: Rabbits mainly eat hay, grass, leafy vegetables, and suitable rabbit food.
+
+Q: What is a hamster?
+A: A hamster is a small rodent often kept as a pet.
+
+Q: What is a guinea pig?
+A: A guinea pig is a small social herbivorous rodent commonly kept as a pet.
+
+Q: What is a pet bird?
+A: A pet bird is a bird kept by people for companionship. Common pet birds
+include parrots, budgerigars, cockatiels, and canaries.
+
+Q: What is a goldfish?
+A: A goldfish is a freshwater fish commonly kept in aquariums or suitable
+ponds.
+
+============================================================
+SECTION 3 - FARM AND DOMESTIC ANIMALS
+============================================================
+
+Q: What is a cow?
+A: A cow is a domesticated herbivorous mammal commonly raised for milk and,
+in some places, meat.
+
+Q: Is a cow a mammal?
+A: Yes. A cow is a mammal.
+
+Q: What does a cow eat?
+A: A cow mainly eats grass, hay, silage, and other plant-based feed.
+
+Q: Where do cows live?
+A: Domestic cows usually live on farms, pastures, cattle sheds, or grazing
+land managed by people.
+
+Q: What is a buffalo?
+A: A buffalo is a large herbivorous mammal. Domestic water buffalo are often
+kept for milk, farm work, and transport.
+
+Q: What is a goat?
+A: A goat is a domesticated herbivorous mammal commonly kept for milk, meat,
+fiber, or farming.
+
+Q: What does a goat eat?
+A: Goats eat grasses, leaves, shrubs, hay, and other plant material.
+
+Q: What is a sheep?
+A: A sheep is a domesticated herbivorous mammal commonly raised for wool,
+milk, and meat.
+
+Q: What is a horse?
+A: A horse is a large domesticated herbivorous mammal used for riding, sport,
+transport, and farm work.
+
+Q: What is a donkey?
+A: A donkey is a domesticated herbivorous mammal related to the horse and
+often used to carry loads.
+
+Q: What is a chicken?
+A: A chicken is a domesticated bird commonly raised for eggs and meat.
+
+Q: What is a duck?
+A: A duck is a water bird with webbed feet that is adapted for swimming.
+
+Q: Is a duck a bird?
+A: Yes. A duck is a bird.
+
+Q: Where do ducks live?
+A: Ducks commonly live in and around freshwater habitats such as ponds,
+lakes, rivers, marshes, and wetlands. Some duck species also use coastal and
+marine habitats.
+
+Q: Where does a duck live?
+A: A duck usually lives near water, including ponds, lakes, rivers, wetlands,
+and marshes.
+
+Q: Where do live duck?
+A: Ducks live mainly near water such as ponds, lakes, rivers, marshes, and
+wetlands.
+
+Q: What do ducks eat?
+A: Ducks may eat aquatic plants, seeds, insects, small aquatic animals, and
+other available foods depending on the species.
+
+============================================================
+SECTION 4 - WILD LAND ANIMALS
+============================================================
+
+Q: What is a lion?
+A: A lion is a large wild cat and a carnivorous mammal.
+
+Q: Where do lions live?
+A: Lions mainly live in grasslands, savannas, and open woodland.
+
+Q: What do lions eat?
+A: Lions are carnivores and eat other animals such as antelope, zebra, and
+other suitable prey.
+
+Q: What is a tiger?
+A: A tiger is a large carnivorous wild cat.
+
+Q: Where do tigers live?
+A: Tigers live in habitats including forests, grasslands, and wetlands in
+parts of Asia.
+
+Q: What do tigers eat?
+A: Tigers are carnivores and commonly hunt animals such as deer and wild boar.
+
+Q: What is an elephant?
+A: An elephant is a very large herbivorous mammal with a trunk.
+
+Q: What is the largest land animal?
+A: The elephant is the largest living land animal.
+
+Q: What do elephants eat?
+A: Elephants eat grass, leaves, bark, roots, fruit, and other plant material.
+
+Q: What is a giraffe?
+A: A giraffe is a tall herbivorous mammal with a very long neck.
+
+Q: What is the tallest land animal?
+A: The giraffe is the tallest living land animal.
+
+Q: What is a zebra?
+A: A zebra is a herbivorous mammal known for its black-and-white stripes.
+
+Q: Which animal has black-and-white stripes?
+A: The zebra has black-and-white stripes.
+
+Q: What is a deer?
+A: A deer is a herbivorous mammal that commonly lives in forests, grasslands,
+and woodland.
+
+Q: What is a bear?
+A: A bear is a large mammal with a strong body and thick fur. Diet varies by
+species.
+
+Q: What is a monkey?
+A: A monkey is a primate. Many monkeys are social animals that live in forests
+and eat fruits, leaves, seeds, insects, and other foods.
+
+Q: What is a camel?
+A: A camel is a large mammal adapted to dry environments. Camels can survive
+for long periods in arid regions by efficiently conserving water.
+
+============================================================
+SECTION 5 - BIRDS
+============================================================
+
+Q: What are birds?
+A: Birds are warm-blooded vertebrates with feathers, beaks, wings, and eggs.
+
+Q: Can all birds fly?
+A: No. Some birds such as penguins and ostriches cannot fly.
+
+Q: What is an eagle?
+A: An eagle is a large bird of prey with strong talons, a sharp beak, and
+excellent eyesight.
+
+Q: What is a sparrow?
+A: A sparrow is a small bird commonly found around human settlements,
+grasslands, and woodland.
+
+Q: What is a parrot?
+A: A parrot is a bird with a strong curved beak. Many parrots are colorful,
+intelligent, and able to imitate sounds.
+
+Q: What is a peacock?
+A: A peacock is the male of the peafowl and is known for its large colorful
+tail display.
+
+Q: What is an owl?
+A: An owl is a bird of prey. Many owl species are active at night and have
+excellent hearing and vision.
+
+Q: What is a pigeon?
+A: A pigeon is a bird commonly found in towns and cities and is known for
+strong navigation ability.
+
+Q: What is a crow?
+A: A crow is an intelligent omnivorous bird.
+
+Q: What is an ostrich?
+A: An ostrich is a large flightless bird that can run very fast.
+
+Q: What is the largest living bird?
+A: The ostrich is the largest living bird.
+
+Q: What is a penguin?
+A: A penguin is a flightless bird adapted for swimming.
+
+Q: Can penguins fly?
+A: No. Penguins cannot fly.
+
+Q: Can penguins swim?
+A: Yes. Penguins are excellent swimmers.
+
+Q: Which bird cannot fly but swims very well?
+A: The penguin cannot fly but swims very well.
+
+Q: Where do penguins live?
+A: Penguins live mainly in the Southern Hemisphere. Different species live in
+Antarctica, sub-Antarctic islands, temperate coasts, and other southern
+regions.
+
+Q: What is a kingfisher?
+A: A kingfisher is a bird known for catching fish and other small aquatic
+animals.
+
+============================================================
+SECTION 6 - FISH
+============================================================
+
+Q: What is fish?
+A: A fish is an animal that lives in water, usually breathes through gills,
+and normally moves using fins.
+
+Q: What is a fish?
+A: A fish is an aquatic vertebrate that usually breathes using gills and
+moves through water using fins.
+
+Q: Where do fish live?
+A: Fish live in aquatic habitats such as oceans, seas, rivers, lakes, ponds,
+streams, and wetlands.
+
+Q: Where does fish live?
+A: Fish live in water, including freshwater and saltwater environments.
+
+Q: How do fish breathe?
+A: Most fish breathe by extracting dissolved oxygen from water through gills.
+
+Q: How do fish move?
+A: Fish usually move through water by using their fins and body muscles.
+
+Q: Do fish have lungs?
+A: Most fish use gills rather than lungs, although a small number of fish
+species have specialized air-breathing adaptations.
+
+Q: Do fish have scales?
+A: Many fish species have scales, although not all fish have the same type of
+body covering.
+
+Q: Are fish vertebrates?
+A: Yes. Fish are vertebrates because they have backbones.
+
+Q: What do fish eat?
+A: Fish diets vary. Depending on the species, fish may eat plants, algae,
+plankton, insects, smaller fish, crustaceans, or other aquatic organisms.
+
+Q: What is a freshwater fish?
+A: A freshwater fish is a fish that lives in rivers, lakes, ponds, streams,
+or other freshwater habitats.
+
+Q: What is a marine fish?
+A: A marine fish is a fish that lives in saltwater environments such as seas
+and oceans.
+
+Q: Give examples of freshwater fish.
+A: Examples of freshwater fish include carp, catfish, trout, and goldfish.
+
+Q: Give examples of marine fish.
+A: Examples of marine fish include tuna, clownfish, cod, and many shark
+species.
+
+============================================================
+SECTION 7 - AQUATIC AND MARINE ANIMALS
+============================================================
+
+Q: What is a water animal?
+A: A water animal is an animal that lives mainly or entirely in aquatic
+habitats.
+
+Q: What are aquatic animals?
+A: Aquatic animals are animals that live in water for most or all of their
+lives.
+
+Q: Give examples of water animals.
+A: Examples include fish, dolphins, whales, sharks, octopuses, jellyfish,
+crabs, sea turtles, and seahorses.
+
+Q: What is a dolphin?
+A: A dolphin is an intelligent aquatic mammal that breathes air through lungs.
+
+Q: Is a dolphin a fish?
+A: No. A dolphin is a mammal.
+
+Q: How do dolphins breathe?
+A: Dolphins breathe air through lungs and must surface to breathe.
+
+Q: Where do dolphins live?
+A: Most dolphins live in oceans and seas, while some species live in rivers.
+
+Q: What is a whale?
+A: A whale is a large aquatic mammal that breathes air through lungs.
+
+Q: Is a whale a fish?
+A: No. A whale is a mammal.
+
+Q: What is the largest animal?
+A: The blue whale is the largest animal known to have lived on Earth.
+
+Q: What is a shark?
+A: A shark is a fish with a skeleton made mainly of cartilage.
+
+Q: Is a shark a fish?
+A: Yes. A shark is a fish.
+
+Q: Where do sharks live?
+A: Sharks mainly live in oceans and seas, although some species can enter
+freshwater.
+
+Q: What is an octopus?
+A: An octopus is a marine mollusk with eight arms.
+
+Q: How many arms does an octopus have?
+A: An octopus has eight arms.
+
+Q: Is an octopus a fish?
+A: No. An octopus is a mollusk.
+
+Q: What is a squid?
+A: A squid is a marine mollusk with arms, tentacles, and a soft body.
+
+Q: What is a jellyfish?
+A: A jellyfish is an aquatic invertebrate with a soft gelatinous body and
+tentacles.
+
+Q: What is a sea turtle?
+A: A sea turtle is a marine reptile that breathes air and spends most of its
+life in the ocean.
+
+Q: Is a sea turtle a reptile?
+A: Yes. A sea turtle is a reptile.
+
+Q: What is a crab?
+A: A crab is a crustacean with a hard exoskeleton and several jointed legs.
+
+Q: Is a crab a fish?
+A: No. A crab is a crustacean.
+
+Q: What is a lobster?
+A: A lobster is a marine crustacean with a hard exoskeleton.
+
+Q: What is a seahorse?
+A: A seahorse is a small marine fish with a horse-shaped head.
+
+Q: Is a seahorse a fish?
+A: Yes. A seahorse is a fish.
+
+Q: What is special about seahorses?
+A: In seahorses, the male carries developing young in a brood pouch.
+
+Q: What is a starfish?
+A: A starfish, also called a sea star, is a marine invertebrate.
+
+Q: Is a starfish a fish?
+A: No. A starfish is an echinoderm, not a fish.
+
+============================================================
+SECTION 8 - FRESHWATER LIFE
+============================================================
+
+Q: What is freshwater?
+A: Freshwater is water with a very low concentration of dissolved salts,
+typically found in rivers, lakes, ponds, and streams.
+
+Q: What animals live in freshwater?
+A: Freshwater habitats can contain fish, frogs, turtles, crocodiles, aquatic
+insects, crustaceans, and other animals.
+
+Q: What is a frog?
+A: A frog is an amphibian that usually begins life in water as a tadpole.
+
+Q: Where do frogs live?
+A: Frogs live in moist environments, ponds, wetlands, streams, forests, and
+other habitats depending on the species.
+
+Q: What is a tadpole?
+A: A tadpole is the aquatic larval stage of a frog or toad.
+
+Q: What is metamorphosis?
+A: Metamorphosis is the developmental process in which a tadpole changes into
+an adult frog.
+
+Q: What is a crocodile?
+A: A crocodile is a large semi-aquatic reptile with powerful jaws.
+
+Q: Where do crocodiles live?
+A: Crocodiles live in and around rivers, lakes, wetlands, estuaries, and
+other suitable aquatic habitats.
+
+============================================================
+SECTION 9 - REPTILES
+============================================================
+
+Q: What is a snake?
+A: A snake is a legless reptile.
+
+Q: Where do snakes live?
+A: Snakes live in many habitats including forests, grasslands, deserts,
+wetlands, farms, and aquatic environments depending on the species.
+
+Q: What do snakes eat?
+A: Snake diets vary and may include rodents, birds, eggs, insects, fish,
+frogs, or other animals.
+
+Q: What is a lizard?
+A: A lizard is a reptile. Most lizards have four legs, although some species
+are legless.
+
+Q: What is a turtle?
+A: A turtle is a reptile with a protective shell.
+
+Q: Where do turtles live?
+A: Different turtles live in oceans, freshwater habitats, wetlands, or on
+land depending on the species.
+
+============================================================
+SECTION 10 - INSECTS AND ARACHNIDS
+============================================================
+
+Q: What is a butterfly?
+A: A butterfly is a winged insect that develops through egg, larva, pupa, and
+adult stages.
+
+Q: What is a bee?
+A: A bee is an insect. Many bees collect nectar and pollen and are important
+pollinators.
+
+Q: What is an ant?
+A: An ant is a social insect that usually lives in a colony.
+
+Q: What is a mosquito?
+A: A mosquito is a small flying insect. Female mosquitoes of many species
+take blood meals to obtain nutrients needed for egg development.
+
+Q: What is a dragonfly?
+A: A dragonfly is a flying insect often found near water.
+
+Q: What is a spider?
+A: A spider is an arachnid with eight legs.
+
+Q: Is a spider an insect?
+A: No. A spider is an arachnid.
+
+Q: How many legs does a spider have?
+A: A spider has eight legs.
+
+Q: How many legs does an insect have?
+A: An insect has six legs.
+
+============================================================
+SECTION 11 - FOOD AND DIET
+============================================================
+
+Q: What is a herbivore?
+A: A herbivore is an animal that mainly eats plants.
+
+Q: Give examples of herbivores.
+A: Examples include cows, horses, rabbits, giraffes, deer, elephants, sheep,
+and goats.
+
+Q: What is a carnivore?
+A: A carnivore is an animal that mainly eats other animals.
+
+Q: Give examples of carnivores.
+A: Examples include lions, tigers, crocodiles, and many sharks.
+
+Q: What is an omnivore?
+A: An omnivore is an animal that eats both plant and animal matter.
+
+Q: Give examples of omnivores.
+A: Examples include many bears, pigs, crows, humans, and some monkeys.
+
+Q: Is a cow a herbivore?
+A: Yes. A cow is a herbivore.
+
+Q: Is a lion a carnivore?
+A: Yes. A lion is a carnivore.
+
+Q: Is a rabbit a herbivore?
+A: Yes. A rabbit is a herbivore.
+
+============================================================
+SECTION 12 - HABITATS
+============================================================
+
+Q: What is a habitat?
+A: A habitat is the natural environment where an organism lives.
+
+Q: Why are habitats important?
+A: Habitats provide animals with food, water, shelter, space, and suitable
+conditions for survival and reproduction.
+
+Q: What animals live in forests?
+A: Forest animals can include tigers, deer, monkeys, bears, owls, snakes, and
+many other species.
+
+Q: What animals live in grasslands?
+A: Grassland animals can include lions, zebras, giraffes, elephants, and
+antelope.
+
+Q: What animals live in deserts?
+A: Desert animals can include camels, desert foxes, lizards, snakes,
+scorpions, and insects.
+
+Q: What animals live in oceans?
+A: Ocean animals include whales, dolphins, sharks, fish, octopuses,
+jellyfish, sea turtles, crabs, and many other species.
+
+Q: What animals live in ponds?
+A: Pond animals can include frogs, fish, insects, snails, ducks, and other
+freshwater species.
+
+Q: What animals live in wetlands?
+A: Wetlands can support ducks, frogs, fish, crocodiles, insects, turtles,
+wading birds, and many other animals.
+
+============================================================
+SECTION 13 - MOVEMENT
+============================================================
+
+Q: How do fish move?
+A: Fish usually swim by moving their bodies and fins.
+
+Q: How do birds move?
+A: Many birds fly using their wings, while birds can also walk, run, hop, or
+swim depending on the species.
+
+Q: How do snakes move?
+A: Snakes move by slithering using muscles and body movements.
+
+Q: How do frogs move?
+A: Frogs commonly jump and swim.
+
+Q: How do ducks move?
+A: Ducks can walk, swim, and most species can fly.
+
+Q: How do penguins move?
+A: Penguins walk on land and swim very efficiently in water.
+
+============================================================
+SECTION 14 - BODY COVERINGS
+============================================================
+
+Q: What covers a mammal's body?
+A: Mammals usually have hair or fur.
+
+Q: What covers a bird's body?
+A: Birds have feathers.
+
+Q: What covers a fish's body?
+A: Many fish have scales, although body covering varies by species.
+
+Q: What covers a reptile's body?
+A: Reptiles have scales or scaly skin.
+
+Q: What kind of skin do amphibians have?
+A: Amphibians commonly have moist skin.
+
+============================================================
+SECTION 15 - YOUNG ANIMALS
+============================================================
+
+Q: What is a baby dog called?
+A: A baby dog is called a puppy.
+
+Q: What is a baby cat called?
+A: A baby cat is called a kitten.
+
+Q: What is a baby cow called?
+A: A baby cow is called a calf.
+
+Q: What is a baby horse called?
+A: A young horse is called a foal.
+
+Q: What is a baby sheep called?
+A: A baby sheep is called a lamb.
+
+Q: What is a baby goat called?
+A: A baby goat is called a kid.
+
+Q: What is a baby lion called?
+A: A baby lion is called a cub.
+
+Q: What is a baby tiger called?
+A: A baby tiger is called a cub.
+
+Q: What is a baby elephant called?
+A: A baby elephant is called a calf.
+
+Q: What is a baby frog called?
+A: The aquatic young stage of a frog is called a tadpole.
+
+Q: What is a baby chicken called?
+A: A baby chicken is called a chick.
+
+Q: What is a baby duck called?
+A: A baby duck is called a duckling.
+
+============================================================
+SECTION 16 - ANIMAL SOUNDS
+============================================================
+
+Q: What sound does a dog make?
+A: A dog commonly barks.
+
+Q: What sound does a cat make?
+A: A cat commonly meows and can also purr.
+
+Q: What sound does a cow make?
+A: A cow commonly moos.
+
+Q: What sound does a horse make?
+A: A horse commonly neighs.
+
+Q: What sound does a lion make?
+A: A lion can roar.
+
+Q: What sound does a duck make?
+A: A duck can make a quacking sound, although duck vocalizations vary by
+species.
+
+Q: What sound does a sheep make?
+A: A sheep commonly bleats.
+
+============================================================
+SECTION 17 - CONSERVATION
+============================================================
+
+Q: What is an endangered animal?
+A: An endangered animal belongs to a species that faces a serious risk of
+extinction.
+
+Q: Why do animals become endangered?
+A: Animals can become endangered because of habitat loss, hunting, pollution,
+climate change, overfishing, invasive species, or other pressures.
+
+Q: What is wildlife conservation?
+A: Wildlife conservation is the protection of wild animals, plants, habitats,
+and ecosystems.
+
+Q: How can wildlife be protected?
+A: Wildlife can be protected through habitat conservation, anti-poaching
+measures, pollution reduction, sustainable resource use, research, and public
+education.
+
+============================================================
+SECTION 18 - PET CARE
+============================================================
+
+Q: What do pets need?
+A: Pets need suitable food, clean water, safe shelter, hygiene, exercise,
+appropriate social interaction, and veterinary care.
+
+Q: Why do pets need clean water?
+A: Pets need clean water for hydration and normal body functions.
+
+Q: Why do pets need veterinary care?
+A: Veterinary care helps prevent, diagnose, and treat health problems.
+
+Q: Should all pets eat the same food?
+A: No. Different species have different nutritional needs and should receive
+species-appropriate diets.
+
+============================================================
+SECTION 19 - SIMPLE CLASSIFICATION QUESTIONS
+============================================================
+
+Q: Is a dog an animal?
+A: Yes. A dog is an animal.
+
+Q: Is a cat an animal?
+A: Yes. A cat is an animal.
+
+Q: Is a cow an animal?
+A: Yes. A cow is an animal.
+
+Q: Is a duck an animal?
+A: Yes. A duck is an animal and a bird.
+
+Q: Is a parrot a bird?
+A: Yes. A parrot is a bird.
+
+Q: Is a penguin a bird?
+A: Yes. A penguin is a bird.
+
+Q: Is an eagle a bird?
+A: Yes. An eagle is a bird.
+
+Q: Is a frog an amphibian?
+A: Yes. A frog is an amphibian.
+
+Q: Is a crocodile a reptile?
+A: Yes. A crocodile is a reptile.
+
+Q: Is a snake a reptile?
+A: Yes. A snake is a reptile.
+
+Q: Is a butterfly an insect?
+A: Yes. A butterfly is an insect.
+
+Q: Is a bee an insect?
+A: Yes. A bee is an insect.
+
+Q: Is a spider an arachnid?
+A: Yes. A spider is an arachnid.
+
+Q: Is a whale a mammal?
+A: Yes. A whale is a mammal.
+
+Q: Is a dolphin a mammal?
+A: Yes. A dolphin is a mammal.
+
+Q: Is a shark a fish?
+A: Yes. A shark is a fish.
+
+Q: Is a seahorse a fish?
+A: Yes. A seahorse is a fish.
+
+============================================================
+SECTION 20 - COMMON NATURAL LANGUAGE VARIANTS
+============================================================
+
+Q: Tell me about fish.
+A: Fish are aquatic vertebrate animals. Most breathe through gills and swim
+using fins.
+
+Q: Explain fish.
+A: Fish are animals adapted to aquatic environments. Most fish have gills,
+fins, and a backbone.
+
+Q: Define fish.
+A: A fish is an aquatic vertebrate that usually has gills and fins.
+
+Q: Tell me about ducks.
+A: Ducks are water birds with webbed feet. They commonly live near ponds,
+lakes, rivers, marshes, and wetlands.
+
+Q: Explain duck.
+A: A duck is a water bird adapted for swimming and commonly found near
+freshwater habitats.
+
+Q: Duck live where?
+A: Ducks commonly live near ponds, lakes, rivers, wetlands, and marshes.
+
+Q: Where duck lives?
+A: Ducks usually live near water such as ponds, lakes, rivers, and wetlands.
+
+Q: Tell me about dogs.
+A: Dogs are domesticated mammals commonly kept as pets, companions, and
+working animals.
+
+Q: Explain cow.
+A: A cow is a domesticated herbivorous mammal commonly raised on farms.
+
+Q: Tell me about birds.
+A: Birds are warm-blooded vertebrates with feathers, beaks, wings, and eggs.
+
+Q: Tell me about water animals.
+A: Water animals live mainly or entirely in aquatic environments. Examples
+include fish, whales, dolphins, sharks, octopuses, sea turtles, and crabs.
+
+============================================================
+END OF KNOWLEDGE BASE
+============================================================
