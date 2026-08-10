@@ -172,6 +172,213 @@ def split_into_sentences(text):
     ]
 
 
+
+def clean_local_answer_text(text):
+    """
+    Remove chunk/heading noise from a candidate grounded answer.
+
+    Examples removed:
+        SECTION 2 - BLUEGLASS ISLAND
+        CHAPTER 4
+        =========
+        ---------
+        Q: next question
+    """
+    value = re.sub(
+        r"\s+",
+        " ",
+        str(text or ""),
+    ).strip()
+
+    if not value:
+        return ""
+
+    value = re.sub(
+        r"^\s*A\s*:\s*",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    # Never leak the following question into the answer.
+    value = re.split(
+        r"\s+\bQ\s*:\s*",
+        value,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0].strip()
+
+    # Stop before any section/chapter marker even when a chunk was cut
+    # immediately after the word SECTION.
+    value = re.split(
+        r"\s+\b(?:SECTION|CHAPTER)\b",
+        value,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0].strip()
+
+    # Decorative separators should never appear in an answer.
+    value = re.split(
+        r"\s+[=\-_*#~]{3,}\s*",
+        value,
+        maxsplit=1,
+    )[0].strip()
+
+    return value
+
+
+def format_yes_no_answer(question, answer):
+    """
+    Make grounded yes/no answers natural without inventing facts.
+
+    Example:
+        Q: Is the observation tower blue?
+        evidence: The main observation tower is copper orange.
+        -> No. The main observation tower is copper orange.
+    """
+    answer = clean_local_answer_text(
+        answer
+    )
+
+    if not answer:
+        return answer
+
+    if re.match(
+        r"^\s*(?:yes|no)\b",
+        answer,
+        flags=re.IGNORECASE,
+    ):
+        return answer
+
+    first_word = re.match(
+        r"^\s*([A-Za-z]+)",
+        str(question or ""),
+    )
+
+    if (
+        not first_word
+        or first_word.group(1).lower()
+        not in {
+            "is",
+            "are",
+            "was",
+            "were",
+            "can",
+            "could",
+            "does",
+            "do",
+            "did",
+            "has",
+            "have",
+            "had",
+        }
+    ):
+        return answer
+
+    question_words = _normalized_keywords(
+        question
+    )
+
+    answer_words = _normalized_keywords(
+        answer
+    )
+
+    if not question_words:
+        return answer
+
+    missing = (
+        question_words
+        - answer_words
+    )
+
+    if len(missing) == 0:
+        return "Yes. " + answer
+
+    if (
+        len(missing) == 1
+        and len(
+            question_words.intersection(
+                answer_words
+            )
+        ) >= 2
+    ):
+        return "No. " + answer
+
+    return answer
+
+
+def extract_named_entity_definition(
+    question,
+    candidate_pairs,
+):
+    """
+    Handle generic entity questions such as:
+        What is Nimbus-4?
+
+    when the source has:
+        Q: What is the name of the station's electric rover?
+        A: The station's electric rover is named Nimbus-4.
+
+    Returns:
+        Nimbus-4 is the station's electric rover.
+    """
+    match = re.match(
+        r"^\s*what\s+is\s+(.+?)\s*\?\s*$",
+        str(question or ""),
+        flags=re.IGNORECASE,
+    )
+
+    if not match:
+        return ""
+
+    entity = match.group(1).strip()
+
+    if not entity:
+        return ""
+
+    entity_keywords = _normalized_keywords(
+        entity
+    )
+
+    if not entity_keywords:
+        return ""
+
+    for source_question, source_answer in candidate_pairs:
+        answer_keywords = _normalized_keywords(
+            source_answer
+        )
+
+        if not entity_keywords.issubset(
+            answer_keywords
+        ):
+            continue
+
+        source_match = re.match(
+            r"^\s*what\s+is\s+the\s+name\s+of\s+(.+?)\s*\?\s*$",
+            source_question,
+            flags=re.IGNORECASE,
+        )
+
+        if not source_match:
+            continue
+
+        category = source_match.group(1).strip()
+
+        category = re.sub(
+            r"^(?:a|an)\s+",
+            "",
+            category,
+            flags=re.IGNORECASE,
+        ).strip()
+
+        if category:
+            return (
+                f"{entity} is {category}."
+            )
+
+    return ""
+
+
 def get_question_keywords(question):
     keywords = []
 
@@ -483,12 +690,9 @@ def _extract_qa_pairs(text):
             match.group(2),
         ).strip()
 
-        source_answer = re.split(
-            r"\s*=+\s*SECTION\b|\s*=+\s*$",
-            source_answer,
-            maxsplit=1,
-            flags=re.IGNORECASE,
-        )[0].strip()
+        source_answer = clean_local_answer_text(
+            source_answer
+        )
 
         if source_question and source_answer:
             pairs.append(
@@ -713,6 +917,7 @@ def generate_local_fallback_answer(
     best_answer = None
     best_pair_score = 0.0
     best_pair_chunk_score = -1.0
+    all_candidate_pairs = []
 
     for chunk in useful_chunks:
         chunk_score = float(
@@ -737,6 +942,10 @@ def generate_local_fallback_answer(
             )
         )
 
+        all_candidate_pairs.extend(
+            candidate_pairs
+        )
+
         for source_question, source_answer in candidate_pairs:
             pair_score = _question_similarity_score(
                 question,
@@ -755,11 +964,27 @@ def generate_local_fallback_answer(
                 best_pair_score = pair_score
                 best_pair_chunk_score = chunk_score
 
+    entity_definition = extract_named_entity_definition(
+        question,
+        all_candidate_pairs,
+    )
+
+    if entity_definition:
+        return format_yes_no_answer(
+            question,
+            entity_definition,
+        )
+
     if (
         best_answer
         and best_pair_score > 0
     ):
-        return best_answer
+        return format_yes_no_answer(
+            question,
+            clean_local_answer_text(
+                best_answer
+            ),
+        )
 
 
     # -----------------------------------------------------
@@ -791,9 +1016,9 @@ def generate_local_fallback_answer(
         )
 
         for sentence in sentences:
-            candidate = str(
-                sentence or ""
-            ).strip()
+            candidate = clean_local_answer_text(
+                sentence
+            )
 
             if not candidate:
                 continue
@@ -846,7 +1071,12 @@ def generate_local_fallback_answer(
                 best_rank = rank
 
     if best_sentence:
-        return best_sentence
+        return format_yes_no_answer(
+            question,
+            clean_local_answer_text(
+                best_sentence
+            ),
+        )
 
 
     # -----------------------------------------------------
@@ -860,10 +1090,27 @@ def generate_local_fallback_answer(
         )
     ).strip()
 
+    top_context = clean_local_answer_text(
+        top_context
+    )
+
     if not top_context:
         return NO_CONTEXT_MESSAGE
 
-    return top_context
+    fallback_sentences = split_into_sentences(
+        top_context
+    )
+
+    if fallback_sentences:
+        return format_yes_no_answer(
+            question,
+            fallback_sentences[0],
+        )
+
+    return format_yes_no_answer(
+        question,
+        top_context,
+    )
 
 
 # =========================================================
@@ -1265,9 +1512,9 @@ def build_generation_result(
 
 
 def clean_generated_answer(answer_text):
-    answer_text = str(
-        answer_text or ""
-    ).strip()
+    answer_text = clean_local_answer_text(
+        answer_text
+    )
 
     if (
         not answer_text

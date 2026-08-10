@@ -68,6 +68,17 @@ QUERY_STOPWORDS = {
     "please",
     "about",
     "me",
+
+    "call",
+    "called",
+    "name",
+    "named",
+    "information",
+    "detail",
+    "details",
+    "give",
+    "show",
+    "provide",
 }
 
 
@@ -121,6 +132,123 @@ def get_meaningful_words(text):
             )
 
     return meaningful
+
+
+
+def is_yes_no_question(question):
+    first_word_match = re.match(
+        r"^\s*([a-zA-Z]+)",
+        str(question or ""),
+    )
+
+    if not first_word_match:
+        return False
+
+    return (
+        first_word_match.group(1).lower()
+        in {
+            "is",
+            "are",
+            "was",
+            "were",
+            "can",
+            "could",
+            "does",
+            "do",
+            "did",
+            "has",
+            "have",
+            "had",
+        }
+    )
+
+
+def get_pool_meaningful_words(embedded_chunks):
+    pool_words = set()
+
+    for chunk in embedded_chunks or []:
+        pool_words.update(
+            get_meaningful_words(
+                chunk.get(
+                    "text",
+                    "",
+                )
+            )
+        )
+
+    return pool_words
+
+
+def query_supported_by_selected_pool(
+    question,
+    meaningful_query_words,
+    embedded_chunks,
+):
+    """
+    Conservative no-context gate for the CURRENT search pool.
+
+    Normal questions require every meaningful query term to exist
+    somewhere in the selected document pool.
+
+    Yes/no questions may have one missing value because the document
+    can contradict the user's proposed value.
+    """
+    pool_words = get_pool_meaningful_words(
+        embedded_chunks
+    )
+
+    if not pool_words:
+        return False
+
+    supported = (
+        meaningful_query_words
+        .intersection(
+            pool_words
+        )
+    )
+
+    missing = (
+        meaningful_query_words
+        - pool_words
+    )
+
+    if not missing:
+        return True
+
+    if (
+        is_yes_no_question(
+            question
+        )
+        and len(missing) <= 1
+        and len(supported) >= 2
+    ):
+        return True
+
+    return False
+
+
+def chunk_query_coverage(
+    meaningful_query_words,
+    chunk_text,
+):
+    if not meaningful_query_words:
+        return 0.0
+
+    chunk_words = get_meaningful_words(
+        chunk_text
+    )
+
+    matched = (
+        meaningful_query_words
+        .intersection(
+            chunk_words
+        )
+    )
+
+    return (
+        len(matched)
+        / len(meaningful_query_words)
+    )
 
 
 def vocabulary_contains_meaningful_term(
@@ -262,10 +390,18 @@ def retrieve_relevant_chunks(
     if not meaningful_query_words:
         return []
 
-    # The indexed documents do not contain the user's subject.
-    if not vocabulary_contains_meaningful_term(
+    # The currently selected document pool must support the
+    # meaningful terms in the user's question.
+    #
+    # Example:
+    #   "What is the password for Aurora Research Station?"
+    #
+    # The entity exists, but "password" does not. Returning [] here
+    # correctly triggers the application's No Context response.
+    if not query_supported_by_selected_pool(
+        question,
         meaningful_query_words,
-        vocabulary,
+        embedded_chunks,
     ):
         return []
 
@@ -310,6 +446,22 @@ def retrieve_relevant_chunks(
 
         # This is the critical false-positive guard.
         if not matched_keywords:
+            continue
+
+        coverage = chunk_query_coverage(
+            meaningful_query_words,
+            chunk_text,
+        )
+
+        minimum_coverage = (
+            0.66
+            if is_yes_no_question(
+                question
+            )
+            else 1.0
+        )
+
+        if coverage < minimum_coverage:
             continue
 
         score = cosine_similarity(
@@ -358,6 +510,9 @@ def retrieve_relevant_chunks(
 
             "matched_keywords":
                 matched_keywords,
+
+            "query_coverage":
+                float(coverage),
         })
 
     scored_chunks.sort(
