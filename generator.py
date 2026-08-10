@@ -682,38 +682,6 @@ def _answer_sentence_bonus(sentence):
     )
 
 
-def clean_local_answer(answer):
-    """
-    Clean formatting artifacts from extracted answers.
-
-    Examples removed from the end:
-        QUESTION 28
-        QUESTION 12:
-        ===== SECTION 4 =====
-    """
-    answer = re.sub(
-        r"\s+",
-        " ",
-        str(answer or ""),
-    ).strip()
-
-    answer = re.sub(
-        r"\s+QUESTION\s+\d+\s*:?\s*$",
-        "",
-        answer,
-        flags=re.IGNORECASE,
-    ).strip()
-
-    answer = re.sub(
-        r"\s*=+\s*SECTION\s+\d+.*$",
-        "",
-        answer,
-        flags=re.IGNORECASE,
-    ).strip()
-
-    return answer
-
-
 def generate_local_fallback_answer(
     question,
     useful_chunks,
@@ -791,9 +759,7 @@ def generate_local_fallback_answer(
         best_answer
         and best_pair_score > 0
     ):
-        return clean_local_answer(
-            best_answer
-        )
+        return best_answer
 
 
     # -----------------------------------------------------
@@ -880,9 +846,7 @@ def generate_local_fallback_answer(
                 best_rank = rank
 
     if best_sentence:
-        return clean_local_answer(
-            best_sentence
-        )
+        return best_sentence
 
 
     # -----------------------------------------------------
