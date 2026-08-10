@@ -463,14 +463,37 @@ def suggestion_key(question):
 
 def clean_suggested_question(question):
     """
-    Clean headings, Q: prefixes and separator artifacts before a
-    question is allowed into the UI.
+    Clean a candidate question before it enters suggestions/history.
+
+    Handles badly chunked text such as:
+        "fish, insects, and many other groups. Q: What is a mammal?"
+    and keeps only:
+        "What is a mammal?"
     """
     question = re.sub(
         r"\s+",
         " ",
         str(question or ""),
     ).strip()
+
+    # If chunk text contains one or more embedded "Q:" markers,
+    # keep only the final question portion.
+    embedded_parts = re.split(
+        r"\bQ\s*:\s*",
+        question,
+        flags=re.IGNORECASE,
+    )
+
+    if len(embedded_parts) > 1:
+        question = embedded_parts[-1].strip()
+
+    # Remove accidental answer content if it leaked into the question.
+    question = re.split(
+        r"\bA\s*:\s*",
+        question,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0].strip()
 
     question = re.sub(
         r"^(?:Q\s*:\s*)+",
@@ -485,13 +508,19 @@ def clean_suggested_question(question):
         question,
     ).strip()
 
-    # Reject accidental section separators / broken extraction.
+    # Strip common chunk/separator noise from the beginning.
+    question = re.sub(
+        r"^[=\-_*#\s]+",
+        "",
+        question,
+    ).strip()
+
     if (
         not question
-        or question.count("=") >= 3
-        or question.count("_") >= 6
+        or question.count("=") >= 2
+        or question.count("_") >= 4
         or len(question) < 6
-        or len(question) > 160
+        or len(question) > 150
     ):
         return ""
 
@@ -501,11 +530,19 @@ def clean_suggested_question(question):
     ):
         return ""
 
-    # Suggestions should look like questions.
     if not question.endswith("?"):
         question += "?"
 
     return question
+
+
+
+
+# Make the same cleanup available to the dashboard so old chat-history
+# questions that came from malformed suggestions render cleanly too.
+app.jinja_env.filters[
+    "clean_question"
+] = clean_suggested_question
 
 
 def are_near_duplicate_questions(
@@ -899,6 +936,43 @@ def get_learned_questions(
     return learned
 
 
+def get_active_chat_questions():
+    """
+    Return all unique questions already asked in the current chat.
+
+    Ask Next uses this complete set, not only the latest few questions,
+    so a question such as "What is RAG?" does not reappear just because
+    it became popular and was asked earlier in the same conversation.
+    """
+    questions = []
+
+    for message in get_active_messages():
+        question = clean_suggested_question(
+            message.get(
+                "question",
+                "",
+            )
+        )
+
+        if not question:
+            continue
+
+        if any(
+            are_near_duplicate_questions(
+                question,
+                existing,
+            )
+            for existing in questions
+        ):
+            continue
+
+        questions.append(
+            question
+        )
+
+    return questions
+
+
 
 def get_recent_questions(
     limit=MAX_RECENT_QUESTIONS,
@@ -957,19 +1031,14 @@ def get_question_suggestions(
     limit=MAX_QUESTION_SUGGESTIONS,
 ):
     """
-    Smart suggestion order:
+    Build diverse Ask Next suggestions.
 
-    1. Useful questions previously asked by users.
-    2. Questions extracted from indexed documents.
-    3. Recent questions in the current chat are excluded.
-    4. Near duplicates are excluded.
-
-    Returned item format:
-        {
-            "question": "...?",
-            "source": "popular" | "document",
-            "count": 3
-        }
+    Rules:
+    - Never repeat any question already asked in the current chat.
+    - Filter malformed chunk text.
+    - Avoid near duplicates.
+    - Show a mix of useful user questions and document questions.
+    - Do not let popular-history items fill the whole panel.
     """
     try:
         vocabulary, idf_values, embedded_chunks = (
@@ -982,41 +1051,41 @@ def get_question_suggestions(
         ):
             return []
 
-        recent_questions = (
-            get_recent_questions()
+        asked_questions = (
+            get_active_chat_questions()
         )
 
-        suggestions = []
-
-        def is_recent(question):
+        def already_asked(question):
             return any(
                 are_near_duplicate_questions(
                     question,
-                    recent_question,
+                    asked_question,
                 )
-                for recent_question
-                in recent_questions
+                for asked_question
+                in asked_questions
             )
 
+        popular_candidates = []
+        document_candidates = []
+
         # -------------------------------------------------
-        # A. Relevant questions asked by users
+        # A. Relevant questions learned from users
         # -------------------------------------------------
 
-        shared_history = (
-            load_shared_question_history()
-        )
-
-        for item in shared_history:
-            question = (
-                clean_suggested_question(
-                    item.get(
-                        "question",
-                        "",
-                    )
+        for item in load_shared_question_history():
+            question = clean_suggested_question(
+                item.get(
+                    "question",
+                    "",
                 )
             )
 
-            if not question:
+            if (
+                not question
+                or already_asked(
+                    question
+                )
+            ):
                 continue
 
             documents = set(
@@ -1033,13 +1102,8 @@ def get_question_suggestions(
             ):
                 continue
 
-            if is_recent(
-                question
-            ):
-                continue
-
             add_unique_suggestion(
-                suggestions,
+                popular_candidates,
                 {
                     "question": question,
                     "source": "popular",
@@ -1052,11 +1116,8 @@ def get_question_suggestions(
                 },
             )
 
-            if len(suggestions) >= limit:
-                return suggestions
-
         # -------------------------------------------------
-        # B. Questions directly found in documents
+        # B. Questions extracted from indexed documents
         # -------------------------------------------------
 
         chunks = embedded_chunks
@@ -1078,13 +1139,20 @@ def get_question_suggestions(
                     "",
                 )
             ):
-                if is_recent(
+                question = clean_suggested_question(
                     question
+                )
+
+                if (
+                    not question
+                    or already_asked(
+                        question
+                    )
                 ):
                     continue
 
                 add_unique_suggestion(
-                    suggestions,
+                    document_candidates,
                     {
                         "question": question,
                         "source": "document",
@@ -1092,8 +1160,51 @@ def get_question_suggestions(
                     },
                 )
 
-                if len(suggestions) >= limit:
-                    return suggestions
+        # -------------------------------------------------
+        # C. Balanced mix
+        # -------------------------------------------------
+
+        suggestions = []
+
+        # At most half of visible suggestions should come from
+        # popular history. This keeps Ask Next fresh.
+        popular_limit = max(
+            1,
+            min(
+                2,
+                limit // 2,
+            )
+        )
+
+        for item in popular_candidates[
+            :popular_limit
+        ]:
+            add_unique_suggestion(
+                suggestions,
+                item,
+            )
+
+        for item in document_candidates:
+            add_unique_suggestion(
+                suggestions,
+                item,
+            )
+
+            if len(suggestions) >= limit:
+                return suggestions
+
+        # If document questions are limited, fill the remainder
+        # with additional popular questions.
+        for item in popular_candidates[
+            popular_limit:
+        ]:
+            add_unique_suggestion(
+                suggestions,
+                item,
+            )
+
+            if len(suggestions) >= limit:
+                break
 
         return suggestions
 
@@ -1104,6 +1215,7 @@ def get_question_suggestions(
         )
 
         return []
+
 
 
 def safe_source_text(text):

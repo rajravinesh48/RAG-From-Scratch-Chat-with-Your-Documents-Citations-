@@ -1,0 +1,86 @@
+RAGFLOW VALIDATION KNOWLEDGE BASE
+=================================
+
+This file contains fictional facts created only for testing a RAG application.
+Use this file to verify ingestion, retrieval, grounded answers, and citations.
+
+SECTION 1 - AURORA RESEARCH STATION
+-----------------------------------
+Q: What is Aurora Research Station?
+A: Aurora Research Station is a fictional scientific facility located on Blueglass Island.
+
+Q: Where is Aurora Research Station located?
+A: Aurora Research Station is located on Blueglass Island.
+
+Q: What color is the main observation tower at Aurora Research Station?
+A: The main observation tower is copper orange.
+
+Q: How many laboratories does Aurora Research Station have?
+A: Aurora Research Station has exactly seven laboratories.
+
+Q: What is the station's emergency radio code?
+A: The emergency radio code is AR-742.
+
+Q: Who is the fictional director of Aurora Research Station?
+A: The fictional director is Dr. Mira Sen.
+
+SECTION 2 - BLUEGLASS ISLAND
+----------------------------
+Q: What is Blueglass Island famous for?
+A: Blueglass Island is famous for glowing blue quartz found along its northern cliffs.
+
+Q: Which side of Blueglass Island has the research harbor?
+A: The research harbor is on the eastern side of Blueglass Island.
+
+Q: What is the highest point on Blueglass Island?
+A: The highest point is Mount Velora.
+
+Q: How tall is Mount Velora?
+A: Mount Velora is 1,284 meters high.
+
+SECTION 3 - RESEARCH VEHICLES
+-----------------------------
+Q: What is the name of the station's electric rover?
+A: The station's electric rover is named Nimbus-4.
+
+Q: What is Nimbus-4 used for?
+A: Nimbus-4 is used to collect rock and soil samples around Blueglass Island.
+
+Q: How many people can Nimbus-4 carry?
+A: Nimbus-4 can carry four people.
+
+Q: What is the name of the station's research boat?
+A: The research boat is named Sea Finch.
+
+Q: What color is the Sea Finch?
+A: The Sea Finch is white with a teal stripe.
+
+SECTION 4 - DAILY OPERATIONS
+----------------------------
+Q: At what time does the morning science briefing begin?
+A: The morning science briefing begins at 07:30.
+
+Q: What meal is served every Friday evening?
+A: Vegetable curry and rice are served every Friday evening.
+
+Q: Where are collected samples catalogued?
+A: Collected samples are catalogued in Laboratory 3.
+
+Q: How long are normal field missions limited to?
+A: Normal field missions are limited to six hours.
+
+SECTION 5 - RAG TEST FACTS
+--------------------------
+Q: What embedding method is used in this validation example?
+A: The validation example uses TF-IDF vectors.
+
+Q: What similarity method is used in this validation example?
+A: The validation example uses cosine similarity.
+
+Q: What should a grounded RAG answer use?
+A: A grounded RAG answer should use information supported by retrieved document chunks.
+
+Q: What should happen if the requested fact is not in the selected documents?
+A: The application should say that it could not find enough relevant information in the uploaded documents.
+
+END OF VALIDATION FILE

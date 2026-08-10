@@ -76,6 +76,7 @@
 
             <form
                 class="upload-box"
+                id="documentUploadForm"
                 method="post"
                 action="{{ url_for('upload_document') }}"
                 enctype="multipart/form-data"
@@ -89,13 +90,17 @@
                 <label class="file-button">
                     <input
                         type="file"
+                        id="documentUploadInput"
                         name="document"
+                        accept=".pdf,.txt,.docx"
                         required
                     >
                     <span>Choose file</span>
                 </label>
 
-                <small>Text is extracted locally before indexing.</small>
+                <small id="uploadStatus">
+                    Text is extracted locally before indexing.
+                </small>
             </form>
         </section>
 
@@ -116,7 +121,7 @@
                     class="doc-row full-width-form"
                 >
                     <button
-                        type="button"
+                        type="submit"
                         class="doc-pill {% if not current_document %}active{% endif %}"
                     >
                         <span class="check-square">✓</span>
@@ -311,8 +316,19 @@
                     <h1>{{ active_chat_title or 'New Chat' }}</h1>
                     <p>
                         Searching:
-                        <strong>All {{ documents|length }} documents</strong>
+                        <strong>
+                            {% if current_document %}
+                                {{ current_document }}
+                            {% else %}
+                                All {{ documents|length }} documents
+                            {% endif %}
+                        </strong>
                     </p>
+
+                    <div class="session-status-line">
+                        <span class="session-live-dot"></span>
+                        Grounded chat · newest answer opens at the bottom
+                    </div>
                 </div>
 
                 <div class="hero-actions">
@@ -372,7 +388,7 @@
                                 </span>
 
                                 <div class="question-card">
-                                    {{ msg.question }}
+                                    {{ msg.question|clean_question }}
                                 </div>
                             </div>
                         </div>
@@ -520,7 +536,7 @@
 
                 <div>
                     <h3>Ask Next</h3>
-                    <p>Smart suggestions from indexed knowledge</p>
+                    <p>Different questions you have not asked in this chat</p>
                 </div>
             </div>
 
@@ -528,11 +544,11 @@
 
                 {% if suggested_questions %}
 
-                    {% for item in suggested_questions[:4] %}
+                    {% for item in suggested_questions[:3] %}
 
                     <button
                         type="button"
-                        class="suggestion-item suggestion-fill"
+                        class="suggestion-item suggestion-fill ask-next-item"
                         data-question="{{ item.question|e }}"
                     >
                         <span class="suggestion-origin
@@ -591,7 +607,7 @@
 
                 <div class="learned-list">
 
-                    {% for item in learned_questions[:3] %}
+                    {% for item in learned_questions[:2] %}
 
                     <button
                         type="button"
@@ -884,6 +900,228 @@ if (questionInput && composerForm) {
             }
         }
     });
+}
+
+
+
+/* =========================================================
+   ASK NEXT DUPLICATE SAFETY
+   A second client-side guard so questions already visible in
+   the current chat never remain inside Ask Next.
+========================================================= */
+
+function normalizeSuggestionText(value) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/\bq\s*:\s*/gi, "")
+        .replace(/[?!.]+$/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+}
+
+
+function hideAlreadyAskedSuggestions() {
+
+    const askedQuestions =
+        Array.from(
+            document.querySelectorAll(
+                ".question-card"
+            )
+        )
+        .map(function(card) {
+            return normalizeSuggestionText(
+                card.textContent
+            );
+        })
+        .filter(Boolean);
+
+
+    document.querySelectorAll(
+        ".ask-next-item"
+    ).forEach(function(button) {
+
+        const questionNode =
+            button.querySelector(
+                "strong"
+            );
+
+        const candidate =
+            normalizeSuggestionText(
+                questionNode
+                    ? questionNode.textContent
+                    : button.dataset.question
+            );
+
+        if (
+            candidate
+            &&
+            askedQuestions.includes(
+                candidate
+            )
+        ) {
+            button.remove();
+        }
+    });
+
+
+    const suggestionList =
+        document.getElementById(
+            "askNextSuggestions"
+        );
+
+    if (
+        suggestionList
+        &&
+        !suggestionList.querySelector(
+            ".ask-next-item"
+        )
+        &&
+        !suggestionList.querySelector(
+            ".suggestion-empty-state"
+        )
+    ) {
+        suggestionList.innerHTML = `
+            <div class="suggestion-empty-state">
+                <span class="suggestion-empty-icon">✦</span>
+                <div>
+                    <strong>No new suggestion yet</strong>
+                    <small>
+                        Ask another topic or select a different document.
+                    </small>
+                </div>
+            </div>
+        `;
+    }
+}
+
+
+window.addEventListener(
+    "load",
+    hideAlreadyAskedSuggestions
+);
+
+
+/* =========================================================
+   VISUAL SEND FEEDBACK
+========================================================= */
+
+const ragComposer =
+    document.getElementById("composerForm");
+
+if (ragComposer) {
+    ragComposer.addEventListener("submit", function () {
+        document.body.classList.add("rag-thinking");
+
+        const sendButton =
+            ragComposer.querySelector(".send-btn");
+
+        if (sendButton) {
+            sendButton.disabled = true;
+            sendButton.innerHTML =
+                "<span class='send-spinner'></span>";
+        }
+    });
+}
+
+
+
+/* =========================================================
+   DOCUMENT UPLOAD
+========================================================= */
+
+const documentUploadForm =
+    document.getElementById(
+        "documentUploadForm"
+    );
+
+const documentUploadInput =
+    document.getElementById(
+        "documentUploadInput"
+    );
+
+const uploadStatus =
+    document.getElementById(
+        "uploadStatus"
+    );
+
+
+if (
+    documentUploadForm
+    &&
+    documentUploadInput
+) {
+
+    documentUploadInput.addEventListener(
+        "change",
+        function() {
+
+            const file =
+                documentUploadInput.files[0];
+
+            if (!file) {
+                return;
+            }
+
+
+            const allowedExtensions =
+                [
+                    "pdf",
+                    "txt",
+                    "docx"
+                ];
+
+
+            const extension =
+                file.name
+                    .split(".")
+                    .pop()
+                    .toLowerCase();
+
+
+            if (
+                !allowedExtensions.includes(
+                    extension
+                )
+            ) {
+
+                documentUploadInput.value =
+                    "";
+
+                if (uploadStatus) {
+                    uploadStatus.textContent =
+                        "Only PDF, TXT and DOCX files are supported.";
+
+                    uploadStatus.classList.add(
+                        "upload-error"
+                    );
+                }
+
+                return;
+            }
+
+
+            if (uploadStatus) {
+
+                uploadStatus.classList.remove(
+                    "upload-error"
+                );
+
+                uploadStatus.innerHTML =
+                    "<span class='upload-mini-spinner'></span>"
+                    + " Uploading "
+                    + file.name
+                    + " and rebuilding vector store…";
+            }
+
+
+            documentUploadForm.classList.add(
+                "is-uploading"
+            );
+
+
+            documentUploadForm.requestSubmit();
+        }
+    );
 }
 
 </script>

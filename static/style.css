@@ -2457,3 +2457,1227 @@ body {
         max-height: 62vh;
     }
 }
+
+
+/* =========================================================
+   FINAL DASHBOARD POLISH V5
+   ========================================================= */
+
+:root {
+    --final-blue: #0b6ea7;
+    --final-blue-2: #35a6d8;
+    --final-soft: #eef8fc;
+    --final-green: #4c9568;
+    --final-shadow: 0 14px 34px rgba(31, 67, 90, .075);
+}
+
+/* Cleaner three-column balance */
+.dashboard-shell {
+    grid-template-columns:
+        270px
+        minmax(650px, 1fr)
+        310px !important;
+
+    gap: 11px !important;
+}
+
+/* LEFT PANEL ------------------------------------------------ */
+
+.sidebar-left {
+    gap: 9px !important;
+}
+
+/* Let document scope use less vertical space. */
+.sidebar-left .grow-card {
+    flex: 0 1 auto !important;
+}
+
+.document-list {
+    max-height: 190px !important;
+}
+
+/* Conversation workspace should remain visible at all times. */
+.sidebar-left > .panel-card:nth-child(3) {
+    flex: 0 0 auto !important;
+}
+
+/* Vector store becomes a compact utility strip. */
+.sidebar-left > .panel-card:last-child {
+    margin-top: auto;
+}
+
+/* Slightly stronger active-state styling. */
+.doc-pill.active,
+.session-item.active {
+    border-color: #78afd0 !important;
+    background:
+        linear-gradient(
+            135deg,
+            #eef8fc,
+            #f6fbfd
+        ) !important;
+
+    box-shadow:
+        inset 3px 0 0
+        var(--final-blue);
+}
+
+/* RAG SESSION ------------------------------------------------ */
+
+.hero-card {
+    border-color: #d5e3eb !important;
+    box-shadow: var(--final-shadow) !important;
+}
+
+.hero-header {
+    min-height: 84px;
+}
+
+.session-status-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-top: 7px;
+
+    color: #91a0ab;
+
+    font-size: 8px;
+}
+
+.session-live-dot {
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #60c68a;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(96,198,138,.10);
+
+    animation:
+        finalLivePulse
+        2.2s
+        ease-in-out
+        infinite;
+}
+
+@keyframes finalLivePulse {
+    50% {
+        box-shadow:
+            0 0 0 7px
+            rgba(96,198,138,0);
+    }
+}
+
+/* Make user questions look like actual chat messages. */
+.message-question {
+    display: flex !important;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+
+    margin:
+        0
+        0
+        9px
+        auto !important;
+
+    max-width: 78%;
+}
+
+.message-question .msg-avatar {
+    flex: 0 0 34px;
+}
+
+.message-question .msg-content {
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.message-question .msg-label {
+    text-align: right;
+}
+
+.question-card {
+    border-color: #d8e5ec !important;
+
+    border-radius:
+        14px
+        14px
+        4px
+        14px !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f5fafc,
+            #edf6fa
+        ) !important;
+
+    box-shadow:
+        0 5px 13px
+        rgba(35, 78, 103, .045) !important;
+}
+
+/* Assistant stays on left and is visually primary. */
+.message-answer {
+    max-width: 92%;
+}
+
+.answer-card {
+    border-radius:
+        4px
+        15px
+        15px
+        15px !important;
+
+    box-shadow:
+        0 7px 18px
+        rgba(34, 68, 90, .05) !important;
+}
+
+/* Keep answer metadata quiet. */
+.answer-tags {
+    margin-bottom: 10px !important;
+}
+
+.tag {
+    padding: 5px 8px !important;
+    font-size: 9px !important;
+}
+
+/* Composer looks more like a chat composer. */
+.composer-shell {
+    padding-top: 7px !important;
+}
+
+.composer-form {
+    padding: 8px !important;
+
+    border-color: #d4e2ea !important;
+
+    border-radius: 15px !important;
+
+    background:
+        linear-gradient(
+            180deg,
+            #fcfeff,
+            #f7fbfd
+        ) !important;
+
+    box-shadow:
+        0 8px 20px
+        rgba(28, 66, 91, .055);
+}
+
+.composer-form textarea {
+    min-height: 60px !important;
+
+    border: 0 !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+        inset 0 0 0 1px
+        #dce6ec;
+}
+
+.composer-form textarea:focus {
+    box-shadow:
+        inset 0 0 0 1px
+        #85b7d2,
+        0 0 0 3px
+        rgba(55, 146, 196, .07);
+}
+
+.send-btn {
+    border-radius: 12px !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0a6399,
+            #2b99cf
+        ) !important;
+
+    transition:
+        transform .17s ease,
+        box-shadow .17s ease;
+}
+
+.send-btn:hover {
+    transform:
+        translateY(-1px);
+
+    box-shadow:
+        0 11px 22px
+        rgba(15, 108, 163, .20);
+}
+
+/* RIGHT PANEL ------------------------------------------------ */
+
+.sidebar-right {
+    gap: 9px !important;
+}
+
+/* Ask Next should not push evidence off-screen. */
+.sidebar-right > .panel-card:first-child {
+    flex: 0 0 auto !important;
+
+    max-height: 310px;
+
+    overflow: hidden;
+}
+
+/* Retrieved Evidence gets the rest of the panel. */
+.sidebar-right > .panel-card:last-child {
+    flex: 1 1 0 !important;
+
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-right > .panel-card:last-child
+.evidence-list {
+    flex: 1 1 auto;
+
+    min-height: 0;
+
+    max-height: none !important;
+
+    overflow-y: auto;
+}
+
+/* Ask Next cards more compact. */
+.suggestion-item {
+    min-height: 52px;
+
+    padding:
+        9px
+        31px
+        9px
+        10px !important;
+}
+
+.suggestion-origin {
+    margin-bottom: 4px !important;
+}
+
+.learned-questions {
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+}
+
+.learned-list {
+    gap: 5px !important;
+}
+
+.learned-chip {
+    padding: 7px 8px !important;
+}
+
+/* Evidence readable but not oversized. */
+.evidence-card {
+    padding: 11px !important;
+}
+
+.evidence-text {
+    font-size: 10px !important;
+    line-height: 1.55 !important;
+}
+
+/* Smooth panel/card interaction. */
+.panel-card,
+.hero-card,
+.suggestion-item,
+.evidence-card,
+.doc-pill,
+.session-item {
+    transition:
+        transform .18s ease,
+        border-color .18s ease,
+        box-shadow .18s ease,
+        background .18s ease;
+}
+
+.suggestion-item:hover,
+.evidence-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .session-live-dot {
+        animation: none !important;
+    }
+}
+
+/* Medium desktop */
+@media (max-width: 1380px) {
+    .dashboard-shell {
+        grid-template-columns:
+            250px
+            minmax(590px, 1fr)
+            290px !important;
+    }
+}
+
+
+/* =========================================================
+   FINAL VIEWPORT FIX V6
+   The page itself never grows on desktop.
+   Only the intended panels scroll internally.
+   ========================================================= */
+
+@media (min-width: 1001px) {
+
+    html,
+    body {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .topbar {
+        position: fixed !important;
+        top: 0;
+        right: 0;
+        left: 0;
+
+        z-index: 500;
+
+        height: 64px !important;
+    }
+
+    .dashboard-shell {
+        position: fixed !important;
+
+        top: 64px !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+
+        padding: 10px !important;
+
+        overflow: hidden !important;
+
+        grid-template-columns:
+            260px
+            minmax(560px, 1fr)
+            300px !important;
+
+        gap: 10px !important;
+    }
+
+    .sidebar-left,
+    .main-stage,
+    .sidebar-right {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+
+        overflow: hidden !important;
+    }
+
+
+    /* ---------------- LEFT ---------------- */
+
+    .sidebar-left {
+        display: grid !important;
+
+        grid-template-rows:
+            auto
+            minmax(135px, 1fr)
+            auto
+            auto !important;
+
+        align-content: stretch;
+
+        gap: 8px !important;
+    }
+
+    .sidebar-left > .panel-card {
+        min-height: 0 !important;
+        margin: 0 !important;
+    }
+
+    .sidebar-left > .panel-card:nth-child(2) {
+        overflow: hidden !important;
+    }
+
+    .sidebar-left > .panel-card:nth-child(2)
+    .document-list {
+        max-height: none !important;
+        height: calc(100% - 44px);
+
+        overflow-y: auto !important;
+
+        scrollbar-gutter: stable;
+    }
+
+    .sidebar-left > .panel-card:nth-child(3) {
+        max-height: 165px;
+
+        overflow: hidden !important;
+    }
+
+    .sidebar-left > .panel-card:nth-child(3)
+    .session-list {
+        max-height: 74px;
+
+        overflow-y: auto;
+
+        scrollbar-gutter: stable;
+    }
+
+    .sidebar-left > .panel-card:last-child {
+        margin-top: 0 !important;
+    }
+
+
+    /* ---------------- CENTER ---------------- */
+
+    .main-stage {
+        display: block !important;
+    }
+
+    .hero-card {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+
+        overflow: hidden !important;
+    }
+
+    .hero-header {
+        flex: 0 0 auto !important;
+
+        min-height: 76px !important;
+
+        padding:
+            12px
+            14px
+            10px !important;
+    }
+
+    .pipeline-bar {
+        flex: 0 0 auto !important;
+
+        margin:
+            7px
+            12px
+            0 !important;
+
+        padding:
+            7px
+            8px !important;
+    }
+
+    .conversation-zone {
+        flex: 1 1 0 !important;
+
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+
+        padding:
+            12px
+            14px
+            20px !important;
+
+        scrollbar-gutter: stable;
+
+        overscroll-behavior: contain;
+    }
+
+    .conversation-inner {
+        max-width: 900px;
+    }
+
+    .composer-shell {
+        flex: 0 0 auto !important;
+
+        padding:
+            7px
+            12px
+            10px !important;
+    }
+
+    .composer-form textarea {
+        min-height: 54px !important;
+        height: 54px !important;
+        max-height: 110px !important;
+    }
+
+    .send-btn {
+        min-height: 54px !important;
+    }
+
+    .scroll-latest-btn {
+        right: 22px !important;
+        bottom: 99px !important;
+    }
+
+
+    /* ---------------- RIGHT ---------------- */
+
+    .sidebar-right {
+        display: grid !important;
+
+        grid-template-rows:
+            auto
+            minmax(0, 1fr) !important;
+
+        gap: 8px !important;
+    }
+
+    .sidebar-right > .panel-card:first-child {
+        max-height: 270px !important;
+
+        overflow-y: auto !important;
+
+        scrollbar-gutter: stable;
+    }
+
+    .sidebar-right > .panel-card:last-child {
+        min-height: 0 !important;
+        height: 100% !important;
+
+        overflow: hidden !important;
+    }
+
+    .sidebar-right > .panel-card:last-child
+    .evidence-list {
+        flex: 1 1 auto !important;
+
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+
+        overflow-y: auto !important;
+
+        scrollbar-gutter: stable;
+    }
+
+    .evidence-empty {
+        min-height: 150px !important;
+    }
+}
+
+
+/* Preserve tablet/mobile stacking without creating the desktop long page. */
+@media (max-width: 1000px) {
+
+    html,
+    body {
+        height: auto !important;
+        overflow: auto !important;
+    }
+
+    .topbar {
+        position: static !important;
+    }
+
+    .dashboard-shell {
+        position: static !important;
+
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+
+        width: 100% !important;
+        height: auto !important;
+
+        overflow: visible !important;
+    }
+
+    .main-stage,
+    .hero-card,
+    .sidebar-left,
+    .sidebar-right {
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    .conversation-zone {
+        min-height: 480px !important;
+        max-height: 65vh !important;
+    }
+}
+
+
+/* =========================================================
+   V7 VISUAL MOTION LAYER
+   Subtle, professional animation without changing layout
+   ========================================================= */
+
+:root {
+    --motion-ease: cubic-bezier(.22, 1, .36, 1);
+    --accent-cyan: #38a8d8;
+    --accent-blue: #0b6ea7;
+    --accent-green: #54b978;
+}
+
+/* ---------- App background ---------- */
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .10;
+}
+
+body::before {
+    width: 320px;
+    height: 320px;
+    left: 28%;
+    top: -120px;
+    background: #5ebde7;
+    animation: ambientOne 12s ease-in-out infinite alternate;
+}
+
+body::after {
+    width: 280px;
+    height: 280px;
+    right: 5%;
+    bottom: -130px;
+    background: #76cfa0;
+    animation: ambientTwo 15s ease-in-out infinite alternate;
+}
+
+@keyframes ambientOne {
+    to {
+        transform: translate(45px, 32px) scale(1.08);
+    }
+}
+
+@keyframes ambientTwo {
+    to {
+        transform: translate(-35px, -24px) scale(.94);
+    }
+}
+
+/* ---------- Initial entrance ---------- */
+
+.topbar {
+    animation: topbarEnter .48s var(--motion-ease) both;
+}
+
+.sidebar-left {
+    animation: panelFromLeft .58s .05s var(--motion-ease) both;
+}
+
+.main-stage {
+    animation: panelFromBottom .62s .10s var(--motion-ease) both;
+}
+
+.sidebar-right {
+    animation: panelFromRight .58s .15s var(--motion-ease) both;
+}
+
+@keyframes topbarEnter {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes panelFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-14px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes panelFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(14px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes panelFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* ---------- Brand ---------- */
+
+.brand-mark {
+    position: relative;
+    animation: brandFloat 3.2s ease-in-out infinite;
+}
+
+.brand-mark::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border: 1px solid rgba(44, 150, 202, .22);
+    border-radius: 13px;
+    animation: logoPulse 2.6s ease-out infinite;
+}
+
+@keyframes brandFloat {
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes logoPulse {
+    0% {
+        opacity: 0;
+        transform: scale(.88);
+    }
+    25% {
+        opacity: .7;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.35);
+    }
+}
+
+/* ---------- Panel cards ---------- */
+
+.panel-card,
+.hero-card {
+    transition:
+        transform .20s var(--motion-ease),
+        box-shadow .20s ease,
+        border-color .20s ease;
+}
+
+.panel-card:hover {
+    transform: translateY(-2px);
+    border-color: #bfd8e5;
+    box-shadow: 0 16px 34px rgba(32, 71, 95, .09);
+}
+
+/* Keep central card stable while still becoming visually active */
+.hero-card:hover {
+    border-color: #c9dfe9;
+    box-shadow: 0 18px 40px rgba(30, 69, 94, .09);
+}
+
+/* ---------- Upload ---------- */
+
+.upload-icon-wrap {
+    animation: uploadBob 2.4s ease-in-out infinite;
+}
+
+@keyframes uploadBob {
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.file-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.file-button::after {
+    content: "";
+    position: absolute;
+    top: -90%;
+    left: -45%;
+    width: 28%;
+    height: 280%;
+    transform: rotate(18deg);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.65),
+        transparent
+    );
+    transition: left .55s var(--motion-ease);
+}
+
+.file-button:hover::after {
+    left: 125%;
+}
+
+/* ---------- Documents / sessions ---------- */
+
+.doc-pill,
+.session-item,
+.suggestion-item,
+.learned-chip,
+.evidence-card {
+    transition:
+        transform .18s var(--motion-ease),
+        border-color .18s ease,
+        background .18s ease,
+        box-shadow .18s ease;
+}
+
+.doc-pill:hover,
+.session-item:hover {
+    transform: translateX(3px);
+    border-color: #9dc5db;
+}
+
+.doc-pill.active,
+.session-item.active {
+    position: relative;
+    overflow: hidden;
+}
+
+.doc-pill.active::after,
+.session-item.active::after {
+    content: "";
+    position: absolute;
+    left: -24%;
+    bottom: 0;
+    width: 24%;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-cyan),
+        transparent
+    );
+    animation: activeScan 3.4s linear infinite;
+}
+
+@keyframes activeScan {
+    to {
+        left: 110%;
+    }
+}
+
+/* ---------- Pipeline ---------- */
+
+.pipeline-bar {
+    position: relative;
+    overflow: hidden;
+}
+
+.pipeline-bar::after {
+    content: "";
+    position: absolute;
+    left: -16%;
+    bottom: 0;
+    width: 16%;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #53bce8,
+        transparent
+    );
+    animation: pipelineScan 4.4s linear infinite;
+}
+
+@keyframes pipelineScan {
+    to {
+        left: 112%;
+    }
+}
+
+.pipeline-step {
+    transition:
+        transform .16s ease,
+        box-shadow .16s ease;
+}
+
+.pipeline-step:hover {
+    transform: translateY(-1px);
+}
+
+.pipeline-step.active {
+    animation: activeStepPulse 1.9s ease-in-out infinite;
+}
+
+@keyframes activeStepPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(17, 118, 177, .15);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(17, 118, 177, 0);
+    }
+}
+
+/* ---------- Chat message motion ---------- */
+
+.message-block {
+    animation: messageEnter .38s var(--motion-ease) both;
+}
+
+.message-block:nth-last-child(1) {
+    animation-delay: .03s;
+}
+
+@keyframes messageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.answer-avatar {
+    animation: assistantGlow 2.7s ease-in-out infinite;
+}
+
+@keyframes assistantGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(23, 116, 171, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(23, 116, 171, .08);
+    }
+}
+
+.question-card:hover,
+.answer-card:hover {
+    border-color: #bcd9e7 !important;
+}
+
+/* ---------- Badges ---------- */
+
+.tag {
+    transition:
+        transform .15s ease,
+        box-shadow .15s ease;
+}
+
+.tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(39, 77, 101, .06);
+}
+
+/* ---------- Ask Next ---------- */
+
+.suggestion-item:hover {
+    transform: translateX(4px);
+    border-color: #98c6dc;
+    box-shadow: 0 8px 18px rgba(35, 81, 107, .07);
+}
+
+.suggestion-arrow {
+    transition:
+        transform .18s ease,
+        color .18s ease;
+}
+
+.suggestion-item:hover .suggestion-arrow {
+    transform: translate(3px, -50%);
+    color: #0580bd;
+}
+
+.learned-chip:hover {
+    transform: translateX(3px);
+    border-color: #a9d1b6;
+}
+
+/* ---------- Evidence ---------- */
+
+.evidence-card {
+    animation: evidenceEnter .36s var(--motion-ease) both;
+}
+
+.evidence-card:nth-child(1) { animation-delay: .05s; }
+.evidence-card:nth-child(2) { animation-delay: .10s; }
+.evidence-card:nth-child(3) { animation-delay: .15s; }
+
+@keyframes evidenceEnter {
+    from {
+        opacity: 0;
+        transform: translateX(7px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.evidence-card:hover {
+    transform: translateY(-2px);
+    border-color: #a9cfe2;
+    box-shadow: 0 9px 20px rgba(35, 73, 98, .07);
+}
+
+/* ---------- Composer ---------- */
+
+.composer-form {
+    transition:
+        border-color .20s ease,
+        box-shadow .20s ease,
+        transform .20s var(--motion-ease);
+}
+
+.composer-form:focus-within {
+    transform: translateY(-1px);
+    border-color: #9bc7dc !important;
+    box-shadow: 0 10px 24px rgba(34, 85, 114, .08) !important;
+}
+
+.send-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.send-btn::after {
+    content: "";
+    position: absolute;
+    top: -120%;
+    left: -55%;
+    width: 34%;
+    height: 340%;
+    transform: rotate(20deg);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.45),
+        transparent
+    );
+    transition: left .60s var(--motion-ease);
+}
+
+.send-btn:hover::after {
+    left: 125%;
+}
+
+.send-btn:active {
+    transform: scale(.97);
+}
+
+/* ---------- Loading / thinking ---------- */
+
+.send-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spinSend .75s linear infinite;
+}
+
+@keyframes spinSend {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+body.rag-thinking .pipeline-step.active {
+    animation: activeStepPulse .9s ease-in-out infinite;
+}
+
+body.rag-thinking .hero-card::after {
+    content: "Retrieving relevant chunks…";
+    position: absolute;
+    right: 18px;
+    bottom: 91px;
+    z-index: 30;
+    padding: 7px 10px;
+    border: 1px solid #cfe2ec;
+    border-radius: 999px;
+    background: rgba(255,255,255,.94);
+    color: #537080;
+    font-size: 9px;
+    box-shadow: 0 8px 18px rgba(35, 75, 100, .08);
+    animation: messageEnter .25s var(--motion-ease) both;
+}
+
+/* ---------- Accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+
+/* =========================================================
+   DOCUMENT UPLOAD FIX / FEEDBACK
+   ========================================================= */
+
+.upload-box {
+    position: relative;
+}
+
+.upload-box.is-uploading {
+    pointer-events: none;
+    opacity: .78;
+}
+
+.upload-box.is-uploading .file-button {
+    cursor: wait;
+}
+
+#uploadStatus {
+    transition:
+        color .18s ease,
+        opacity .18s ease;
+}
+
+#uploadStatus.upload-error {
+    color: #c64c4c !important;
+}
+
+.upload-mini-spinner {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    margin-right: 5px;
+    vertical-align: -1px;
+
+    border: 1.5px solid rgba(13, 107, 159, .22);
+    border-top-color: #0d6b9f;
+    border-radius: 50%;
+
+    animation: uploadMiniSpin .65s linear infinite;
+}
+
+@keyframes uploadMiniSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
