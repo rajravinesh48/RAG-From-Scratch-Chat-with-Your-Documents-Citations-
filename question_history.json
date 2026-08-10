@@ -59,6 +59,15 @@
         ]
     },
     {
+        "question": "What is the research boat called?",
+        "key": "boat called research",
+        "count": 4,
+        "last_asked": "2026-08-10 21:59:42",
+        "documents": [
+            "ragflow_validation_test.txt"
+        ]
+    },
+    {
         "question": "How many laboratories does Aurora Research Station have?",
         "key": "aurora doe have laboratory many research station",
         "count": 4,
@@ -103,15 +112,6 @@
         "documents": [
             "animal_bird_fish_duck_extended_qa.txt",
             "living_things_animals_birds_water_animals.txt"
-        ]
-    },
-    {
-        "question": "What is the research boat called?",
-        "key": "boat called research",
-        "count": 2,
-        "last_asked": "2026-08-10 21:54:40",
-        "documents": [
-            "ragflow_validation_test.txt"
         ]
     },
     {

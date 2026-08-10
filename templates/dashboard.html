@@ -34,12 +34,16 @@
     </div>
 
     <div class="topbar-right">
+
+        {% if current_user.role == "admin" %}
         <a
-            href="#" id="openUserControlBtn"
+            href="#"
+            id="openUserControlBtn"
             class="top-action"
         >
             USER CONTROL
         </a>
+        {% endif %}
 
         <div class="user-meta">
             <strong>{{ current_user.username }}</strong>
