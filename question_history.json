@@ -21,8 +21,8 @@
     {
         "question": "Where is Aurora Research Station located?",
         "key": "aurora located research station",
-        "count": 8,
-        "last_asked": "2026-08-10 21:20:43",
+        "count": 9,
+        "last_asked": "2026-08-10 21:22:14",
         "documents": [
             "animal_bird_fish_duck_extended_qa.txt",
             "ragflow_validation_test.txt",
@@ -106,6 +106,15 @@
         ]
     },
     {
+        "question": "What is the research boat called?",
+        "key": "boat called research",
+        "count": 2,
+        "last_asked": "2026-08-10 21:54:40",
+        "documents": [
+            "ragflow_validation_test.txt"
+        ]
+    },
+    {
         "question": "What is the emergency radio code?",
         "key": "code emergency radio",
         "count": 2,
@@ -139,6 +148,15 @@
         "last_asked": "2026-08-10 18:25:28",
         "documents": [
             "animal_bird_fish_duck_extended_qa.txt"
+        ]
+    },
+    {
+        "question": "What similarity method is used?",
+        "key": "method similarity used",
+        "count": 1,
+        "last_asked": "2026-08-10 21:53:27",
+        "documents": [
+            "ragflow_validation_test.txt"
         ]
     },
     {

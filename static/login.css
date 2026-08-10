@@ -980,137 +980,706 @@ input {
 
 
 /* =========================================================
-   LOGIN MOTION V3
+   RAGFLOW LOGIN V8 - MOTION & VISUAL POLISH
+   Professional animation without changing Flask behavior
    ========================================================= */
 
-@keyframes loginLeftIn {
+:root {
+    --motion-smooth: cubic-bezier(.22, 1, .36, 1);
+    --motion-soft: cubic-bezier(.4, 0, .2, 1);
+    --cyan: #64d7ff;
+    --cyan-2: #2eb2ea;
+    --green: #74e0a4;
+}
+
+/* ---------------------------------------------------------
+   Background ambience
+--------------------------------------------------------- */
+
+.login-bg {
+    background:
+        radial-gradient(
+            circle at 72% 20%,
+            rgba(66, 176, 228, .09),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 92% 76%,
+            rgba(99, 214, 163, .07),
+            transparent 24%
+        );
+}
+
+.orb {
+    animation:
+        orbDrift 12s ease-in-out infinite alternate;
+    will-change: transform;
+}
+
+.orb-two {
+    animation-duration: 15s;
+    animation-direction: alternate-reverse;
+}
+
+@keyframes orbDrift {
     from {
-        opacity: 0;
-        transform: translateX(-18px);
+        transform: translate3d(0, 0, 0) scale(1);
     }
+
     to {
-        opacity: 1;
-        transform: none;
+        transform: translate3d(38px, -24px, 0) scale(1.08);
     }
 }
 
-@keyframes loginRightIn {
-    from {
-        opacity: 0;
-        transform: translateX(18px);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
+.bg-grid {
+    opacity: .48;
+    animation: gridBreath 7s ease-in-out infinite;
 }
 
-@keyframes loginFeatureIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
-@keyframes readyPulse {
-    0%, 100% {
-        box-shadow: 0 0 0 0 rgba(119, 223, 158, .15);
-    }
+@keyframes gridBreath {
     50% {
-        box-shadow: 0 0 0 7px rgba(119, 223, 158, 0);
+        opacity: .72;
     }
 }
 
-@keyframes flowGlow {
+/* Tiny floating background points */
+.login-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(39, 151, 208, .28);
+    box-shadow: 0 0 0 5px rgba(39,151,208,.045);
+    animation: particleFloat 8s ease-in-out infinite;
+}
+
+.particle-1 { left: 54%; top: 13%; animation-delay: -1s; }
+.particle-2 { left: 82%; top: 18%; animation-delay: -4s; }
+.particle-3 { left: 65%; top: 68%; animation-delay: -2.5s; }
+.particle-4 { left: 93%; top: 55%; animation-delay: -6s; }
+.particle-5 { left: 58%; top: 88%; animation-delay: -3.3s; }
+.particle-6 { left: 76%; top: 40%; animation-delay: -5.2s; }
+
+@keyframes particleFloat {
     0%, 100% {
-        opacity: .45;
+        transform: translateY(0) scale(1);
+        opacity: .3;
     }
+
     50% {
-        opacity: 1;
+        transform: translateY(-18px) scale(1.25);
+        opacity: .8;
     }
 }
+
+/* ---------------------------------------------------------
+   Page entrance
+--------------------------------------------------------- */
 
 .login-brand-panel {
-    animation: loginLeftIn .65s cubic-bezier(.22,1,.36,1) both;
+    animation:
+        brandPanelEnter .72s var(--motion-smooth) both;
 }
 
 .login-form-panel {
-    animation: loginRightIn .65s .08s cubic-bezier(.22,1,.36,1) both;
+    animation:
+        formPanelEnter .72s .08s var(--motion-smooth) both;
 }
 
-.brand-feature {
-    opacity: 0;
-    animation: loginFeatureIn .42s cubic-bezier(.22,1,.36,1) forwards;
+@keyframes brandPanelEnter {
+    from {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
-.brand-feature:nth-child(1) { animation-delay: .22s; }
-.brand-feature:nth-child(2) { animation-delay: .30s; }
-.brand-feature:nth-child(3) { animation-delay: .38s; }
-.brand-feature:nth-child(4) { animation-delay: .46s; }
+@keyframes formPanelEnter {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
 
-.ready-dot {
-    animation: readyPulse 2.2s ease-in-out infinite;
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
-.flow-line {
-    animation: flowGlow 2.5s ease-in-out infinite;
+/* ---------------------------------------------------------
+   Left-side animated network
+--------------------------------------------------------- */
+
+.brand-network {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
 
-.login-brand-logo,
-.card-icon {
+.network-ring {
+    position: absolute;
+    border: 1px solid rgba(141, 225, 255, .10);
+    border-radius: 50%;
+}
+
+.ring-a {
+    width: 430px;
+    height: 430px;
+    right: -90px;
+    top: 145px;
+    animation: ringRotate 22s linear infinite;
+}
+
+.ring-b {
+    width: 260px;
+    height: 260px;
+    left: -70px;
+    bottom: -90px;
+    animation: ringRotateReverse 18s linear infinite;
+}
+
+@keyframes ringRotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes ringRotateReverse {
+    to {
+        transform: rotate(-360deg);
+    }
+}
+
+.network-dot {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #8ee7ff;
+    box-shadow:
+        0 0 0 6px rgba(91, 208, 247, .08),
+        0 0 18px rgba(91, 208, 247, .4);
+    animation: networkPulse 2.7s ease-in-out infinite;
+}
+
+.dot-a { right: 18%; top: 26%; }
+.dot-b { right: 9%; top: 56%; animation-delay: -.9s; }
+.dot-c { left: 20%; bottom: 17%; animation-delay: -1.8s; }
+
+@keyframes networkPulse {
+    50% {
+        transform: scale(1.45);
+        opacity: .55;
+    }
+}
+
+.network-line {
+    position: absolute;
+    height: 1px;
+    transform-origin: left center;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(100, 215, 255, .30),
+            transparent
+        );
+    animation: lineSignal 4s ease-in-out infinite;
+}
+
+.line-a {
+    width: 230px;
+    right: 2%;
+    top: 42%;
+    transform: rotate(-22deg);
+}
+
+.line-b {
+    width: 190px;
+    left: 8%;
+    bottom: 26%;
+    transform: rotate(20deg);
+    animation-delay: -2s;
+}
+
+@keyframes lineSignal {
+    0%, 100% {
+        opacity: .12;
+    }
+
+    50% {
+        opacity: .65;
+    }
+}
+
+/* ---------------------------------------------------------
+   Brand/header animation
+--------------------------------------------------------- */
+
+.login-brand-logo {
+    position: relative;
+    animation: logoFloat 3.4s ease-in-out infinite;
     transition:
-        transform .25s cubic-bezier(.22,1,.36,1),
+        transform .25s var(--motion-smooth),
         box-shadow .25s ease;
 }
 
-.login-brand-logo:hover,
-.card-icon:hover {
-    transform: translateY(-3px) rotate(-2deg);
-    box-shadow: 0 10px 22px rgba(21, 103, 153, .16);
+.login-brand-logo:hover {
+    transform: translateY(-4px) rotate(-2deg);
+    box-shadow:
+        0 12px 28px rgba(27, 141, 200, .24);
 }
 
-.brand-feature {
+@keyframes logoFloat {
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.ready-pill {
+    position: relative;
+    overflow: hidden;
+    animation: readyPillFloat 3.2s ease-in-out infinite;
+}
+
+.ready-pill::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -65%;
+    width: 40%;
+    height: 100%;
+    transform: skewX(-20deg);
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,.12),
+            transparent
+        );
+    animation: readySweep 4.8s ease-in-out infinite;
+}
+
+@keyframes readyPillFloat {
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes readySweep {
+    45%, 100% {
+        left: 125%;
+    }
+}
+
+.ready-dot {
+    animation: readyDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes readyDotPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 4px rgba(124,226,166,.10);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 8px rgba(124,226,166,0);
+    }
+}
+
+/* ---------------------------------------------------------
+   Headline + content reveal
+--------------------------------------------------------- */
+
+.mini-kicker,
+.brand-panel-content h1,
+.brand-panel-content > p,
+.flow-board,
+.brand-feature-grid,
+.brand-tags {
+    opacity: 0;
+    animation:
+        contentRise .55s var(--motion-smooth) forwards;
+}
+
+.mini-kicker { animation-delay: .18s; }
+.brand-panel-content h1 { animation-delay: .25s; }
+.brand-panel-content > p { animation-delay: .32s; }
+.flow-board { animation-delay: .39s; }
+.brand-feature-grid { animation-delay: .46s; }
+.brand-tags { animation-delay: .58s; }
+
+@keyframes contentRise {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Animated gradient headline */
+.brand-panel-content h1 span {
+    background:
+        linear-gradient(
+            90deg,
+            #ffffff 0%,
+            #7bdcff 32%,
+            #b7f2ff 50%,
+            #7bdcff 68%,
+            #ffffff 100%
+        );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: headlineShimmer 5.5s linear infinite;
+}
+
+@keyframes headlineShimmer {
+    to {
+        background-position: -220% center;
+    }
+}
+
+/* ---------------------------------------------------------
+   Pipeline animation
+--------------------------------------------------------- */
+
+.flow-board {
+    position: relative;
+    overflow: hidden;
+}
+
+.flow-board::after {
+    content: "";
+    position: absolute;
+    left: -24%;
+    bottom: 0;
+    width: 24%;
+    height: 2px;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(111, 224, 255, .95),
+            transparent
+        );
+    animation: pipelineScan 4.2s linear infinite;
+}
+
+@keyframes pipelineScan {
+    to {
+        left: 112%;
+    }
+}
+
+.flow-step {
     transition:
-        transform .2s cubic-bezier(.22,1,.36,1),
-        border-color .2s ease,
-        background .2s ease;
+        transform .2s var(--motion-smooth),
+        opacity .2s ease;
+}
+
+.flow-step:hover {
+    transform: translateY(-3px);
+}
+
+.flow-step b {
+    animation: stepPulse 3s ease-in-out infinite;
+}
+
+.flow-step:nth-of-type(3) b { animation-delay: -.5s; }
+.flow-step:nth-of-type(5) b { animation-delay: -1s; }
+.flow-step:nth-of-type(7) b { animation-delay: -1.5s; }
+
+@keyframes stepPulse {
+    50% {
+        border-color: rgba(122, 222, 255, .48);
+        background: rgba(98, 200, 241, .14);
+        box-shadow:
+            0 0 0 5px rgba(86, 195, 236, .04);
+    }
+}
+
+.flow-line {
+    position: relative;
+    overflow: hidden;
+}
+
+.flow-line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 42%;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            #87e5ff,
+            transparent
+        );
+    animation: flowPacket 2.4s linear infinite;
+}
+
+@keyframes flowPacket {
+    from {
+        transform: translateX(-130%);
+    }
+
+    to {
+        transform: translateX(330%);
+    }
+}
+
+/* ---------------------------------------------------------
+   Feature cards
+--------------------------------------------------------- */
+
+.brand-feature {
+    opacity: 0;
+    animation:
+        featureCardEnter .52s var(--motion-smooth) forwards;
+    transition:
+        transform .22s var(--motion-smooth),
+        border-color .22s ease,
+        background .22s ease,
+        box-shadow .22s ease;
+}
+
+.brand-feature:nth-child(1) { animation-delay: .50s; }
+.brand-feature:nth-child(2) { animation-delay: .57s; }
+.brand-feature:nth-child(3) { animation-delay: .64s; }
+.brand-feature:nth-child(4) { animation-delay: .71s; }
+
+@keyframes featureCardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .brand-feature:hover {
+    transform: translateY(-4px);
+    border-color: rgba(113, 220, 255, .28);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.09),
+            rgba(74,172,219,.11)
+        );
+    box-shadow:
+        0 14px 30px rgba(4, 47, 82, .16);
+}
+
+.feature-icon {
+    transition:
+        transform .22s var(--motion-smooth),
+        background .22s ease;
+}
+
+.brand-feature:hover .feature-icon {
+    transform: scale(1.08) rotate(-3deg);
+    background: rgba(102, 212, 255, .17);
+}
+
+/* ---------------------------------------------------------
+   Right login card
+--------------------------------------------------------- */
+
+.login-card {
+    overflow: hidden;
+    animation:
+        loginCardEnter .62s .20s var(--motion-smooth) both;
+    transition:
+        transform .25s var(--motion-smooth),
+        box-shadow .25s ease,
+        border-color .25s ease;
+}
+
+.login-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(121, 220, 255, .25);
-    background: rgba(92, 192, 235, .10);
+    border-color: #c4dce8;
+    box-shadow:
+        0 34px 74px rgba(31, 67, 92, .15),
+        0 0 0 1px rgba(255,255,255,.85) inset;
+}
+
+@keyframes loginCardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.login-card-glow {
+    position: absolute;
+    width: 210px;
+    height: 210px;
+    right: -100px;
+    top: -100px;
+    border-radius: 50%;
+    pointer-events: none;
+    background:
+        radial-gradient(
+            circle,
+            rgba(61, 181, 229, .13),
+            rgba(61,181,229,0) 68%
+        );
+    animation: cardGlowDrift 6s ease-in-out infinite alternate;
+}
+
+@keyframes cardGlowDrift {
+    to {
+        transform: translate(-36px, 28px) scale(1.12);
+    }
+}
+
+.login-accent {
+    background-size: 200% 100%;
+    animation: accentMove 3.2s linear infinite;
+}
+
+@keyframes accentMove {
+    to {
+        background-position: 200% 0;
+    }
+}
+
+.card-icon {
+    animation: cardIconFloat 3s ease-in-out infinite;
+}
+
+@keyframes cardIconFloat {
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+/* ---------------------------------------------------------
+   Form interaction
+--------------------------------------------------------- */
+
+.field-group {
+    opacity: 0;
+    animation:
+        fieldReveal .42s var(--motion-smooth) forwards;
+}
+
+.field-group:nth-child(1) {
+    animation-delay: .34s;
+}
+
+.field-group:nth-child(2) {
+    animation-delay: .42s;
+}
+
+@keyframes fieldReveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .field-wrap {
-    transition: transform .18s ease;
+    transition:
+        transform .18s var(--motion-smooth);
 }
 
 .field-wrap:focus-within {
     transform: translateY(-2px);
 }
 
+.field-wrap input {
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease,
+        transform .2s var(--motion-smooth);
+}
+
+.field-wrap input:focus {
+    box-shadow:
+        0 0 0 4px rgba(56,138,190,.09),
+        0 9px 22px rgba(40, 94, 126, .06);
+}
+
+.field-icon {
+    transition:
+        transform .18s ease,
+        color .18s ease;
+}
+
+.field-wrap:focus-within .field-icon {
+    color: var(--blue-800);
+    transform: scale(1.12);
+}
+
+/* ---------------------------------------------------------
+   Sign-in button
+--------------------------------------------------------- */
+
 .login-btn {
     position: relative;
     overflow: hidden;
+    opacity: 0;
+    animation:
+        buttonReveal .45s .49s var(--motion-smooth) forwards;
     transition:
-        transform .18s ease,
+        transform .18s var(--motion-smooth),
         box-shadow .18s ease,
         filter .18s ease;
 }
 
-.login-btn::after {
+@keyframes buttonReveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.login-btn::before {
     content: "";
     position: absolute;
-    top: -120%;
-    left: -40%;
-    width: 28%;
-    height: 340%;
-    transform: rotate(20deg);
+    top: -130%;
+    left: -55%;
+    width: 32%;
+    height: 360%;
+    transform: rotate(22deg);
     background:
         linear-gradient(
             90deg,
@@ -1118,30 +1687,120 @@ input {
             rgba(255,255,255,.42),
             transparent
         );
-    transition: left .62s cubic-bezier(.22,1,.36,1);
+    transition: left .62s var(--motion-smooth);
 }
 
 .login-btn:hover {
     transform: translateY(-2px);
-    filter: brightness(1.05);
+    filter: brightness(1.04);
+    box-shadow:
+        0 17px 30px rgba(10,111,168,.27);
 }
 
-.login-btn:hover::after {
-    left: 125%;
+.login-btn:hover::before {
+    left: 130%;
+}
+
+.login-btn:active {
+    transform: translateY(0) scale(.99);
+}
+
+.login-btn .arrow {
+    transition:
+        transform .18s var(--motion-smooth);
+}
+
+.login-btn:hover .arrow {
+    transform: translateX(4px);
+}
+
+/* ---------------------------------------------------------
+   Access cards / footer
+--------------------------------------------------------- */
+
+.access-grid {
+    opacity: 0;
+    animation:
+        contentRise .45s .58s var(--motion-smooth) forwards;
 }
 
 .access-box {
     transition:
-        transform .18s ease,
-        border-color .18s ease,
-        box-shadow .18s ease;
+        transform .2s var(--motion-smooth),
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
 }
 
 .access-box:hover {
-    transform: translateY(-2px);
-    border-color: #bfd8e7;
-    box-shadow: 0 8px 18px rgba(30, 75, 103, .06);
+    transform: translateY(-3px);
+    border-color: #bddae8;
+    background: #ffffff;
+    box-shadow:
+        0 10px 22px rgba(35, 72, 95, .07);
 }
+
+.access-dot {
+    animation: accessPulse 2.3s ease-in-out infinite;
+}
+
+.access-user {
+    animation-delay: -1.15s;
+}
+
+@keyframes accessPulse {
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.login-footer-note,
+.login-page-note {
+    opacity: 0;
+    animation:
+        contentRise .45s .68s var(--motion-smooth) forwards;
+}
+
+/* ---------------------------------------------------------
+   Error box
+--------------------------------------------------------- */
+
+.error-box {
+    animation:
+        errorShake .35s var(--motion-soft) both;
+}
+
+@keyframes errorShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+
+    30% {
+        transform: translateX(-5px);
+    }
+
+    65% {
+        transform: translateX(5px);
+    }
+}
+
+/* ---------------------------------------------------------
+   Loading state
+--------------------------------------------------------- */
+
+.login-btn:disabled {
+    cursor: wait;
+    opacity: .88;
+}
+
+.spinner {
+    box-shadow:
+        0 0 0 4px rgba(255,255,255,.06);
+}
+
+/* ---------------------------------------------------------
+   Accessibility
+--------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -1150,5 +1809,31 @@ input {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Mobile remains clean */
+@media (max-width: 1180px) {
+    .login-form-panel {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-form-panel::before {
+        content: "";
+        position: absolute;
+        width: 280px;
+        height: 280px;
+        top: -110px;
+        right: -100px;
+        border-radius: 50%;
+        background:
+            radial-gradient(
+                circle,
+                rgba(49, 167, 220, .12),
+                transparent 68%
+            );
+        animation: cardGlowDrift 7s ease-in-out infinite alternate;
     }
 }
