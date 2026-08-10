@@ -2,13 +2,16 @@ import inspect
 import json
 import os
 import re
+import time
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
+from threading import RLock
 from uuid import uuid4
 
 from flask import (
     Flask,
+    jsonify,
     make_response,
     redirect,
     render_template,
@@ -16,6 +19,8 @@ from flask import (
     session,
     url_for,
 )
+from cachelib.file import FileSystemCache
+from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -32,6 +37,34 @@ app.secret_key = os.environ.get(
     "rag_demo_secret_key_change_this",
 )
 
+# =========================================================
+# SERVER-SIDE SESSION
+# =========================================================
+# The browser cookie now contains only a small session id. Chat history,
+# citations and retrieved-source metadata live on the server instead of
+# inside Flask's signed cookie.
+SESSION_DIR = Path(
+    os.getenv(
+        "RAG_SESSION_DIR",
+        ".runtime/flask_sessions",
+    )
+)
+SESSION_DIR.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+app.config.update(
+    SESSION_TYPE="cachelib",
+    SESSION_CACHELIB=FileSystemCache(
+        cache_dir=str(SESSION_DIR),
+        threshold=500,
+    ),
+    SESSION_PERMANENT=False,
+)
+
+Session(app)
+
 DOCUMENTS_DIR = Path("documents")
 VECTOR_STORE_FILE = Path("vector_store/store.json")
 USERS_FILE = Path("users.json")
@@ -39,9 +72,10 @@ QUESTION_HISTORY_FILE = Path("question_history.json")
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 ALLOWED_TOP_K = {1, 2, 3, 5}
-MAX_CHAT_ITEMS = 10
+MAX_CHAT_ITEMS = 20
+CHAT_RENDER_LIMIT = 12
 MAX_CHAT_SESSIONS = 8
-MAX_SOURCE_TEXT_LENGTH = 800
+MAX_SOURCE_TEXT_LENGTH = 500
 MAX_QUESTION_SUGGESTIONS = 16
 MAX_SHARED_QUESTION_HISTORY = 150
 MAX_RECENT_QUESTIONS = 5
@@ -246,25 +280,203 @@ def admin_required(function):
     return wrapper
 
 
+def api_login_required(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        if "username" not in session:
+            return jsonify({
+                "ok": False,
+                "error": "Your session has expired.",
+                "login_url": url_for(
+                    "login"
+                ),
+            }), 401
+
+        return function(
+            *args,
+            **kwargs,
+        )
+
+    return wrapper
+
+
 # =========================================================
 # RAG HELPERS
 # =========================================================
 
+def _empty_vector_store_cache():
+    return {
+        "signature": None,
+        "vocabulary": None,
+        "idf_values": None,
+        "chunks": None,
+        "by_filename": {},
+    }
+
+
+_VECTOR_STORE_CACHE = _empty_vector_store_cache()
+_VECTOR_STORE_LOCK = RLock()
+
+
+def invalidate_vector_store_cache():
+    """Invalidate the in-process vector-store cache after a rebuild."""
+    global _VECTOR_STORE_CACHE
+
+    with _VECTOR_STORE_LOCK:
+        _VECTOR_STORE_CACHE = (
+            _empty_vector_store_cache()
+        )
+
+
 def load_vector_store():
+    """
+    Load vector_store/store.json once per Gunicorn process.
+
+    The file is re-read only when its modification time or size changes.
+    Normal questions reuse the already parsed vocabulary, IDF values and
+    chunk list instead of opening/parsing the JSON file again.
+    """
+    global _VECTOR_STORE_CACHE
+
     if not VECTOR_STORE_FILE.exists():
+        invalidate_vector_store_cache()
         return None, None, None
 
     try:
-        with open(VECTOR_STORE_FILE, "r", encoding="utf-8") as file:
-            data = json.load(file)
-    except (OSError, json.JSONDecodeError):
+        stat = VECTOR_STORE_FILE.stat()
+        signature = (
+            stat.st_mtime_ns,
+            stat.st_size,
+        )
+    except OSError:
         return None, None, None
 
-    return (
-        data.get("vocabulary"),
-        data.get("idf_values"),
-        data.get("chunks"),
-    )
+    with _VECTOR_STORE_LOCK:
+        if (
+            _VECTOR_STORE_CACHE.get(
+                "signature"
+            )
+            == signature
+            and _VECTOR_STORE_CACHE.get(
+                "chunks"
+            )
+            is not None
+        ):
+            return (
+                _VECTOR_STORE_CACHE[
+                    "vocabulary"
+                ],
+                _VECTOR_STORE_CACHE[
+                    "idf_values"
+                ],
+                _VECTOR_STORE_CACHE[
+                    "chunks"
+                ],
+            )
+
+        try:
+            with open(
+                VECTOR_STORE_FILE,
+                "r",
+                encoding="utf-8",
+            ) as file:
+                data = json.load(file)
+        except (
+            OSError,
+            json.JSONDecodeError,
+        ):
+            return None, None, None
+
+        chunks = data.get(
+            "chunks"
+        ) or []
+
+        by_filename = {}
+
+        for chunk in chunks:
+            filename = chunk.get(
+                "filename"
+            )
+
+            if not filename:
+                continue
+
+            by_filename.setdefault(
+                filename,
+                [],
+            ).append(
+                chunk
+            )
+
+        _VECTOR_STORE_CACHE = {
+            "signature": signature,
+            "vocabulary": data.get(
+                "vocabulary"
+            ),
+            "idf_values": data.get(
+                "idf_values"
+            ),
+            "chunks": chunks,
+            "by_filename": by_filename,
+        }
+
+        return (
+            _VECTOR_STORE_CACHE[
+                "vocabulary"
+            ],
+            _VECTOR_STORE_CACHE[
+                "idf_values"
+            ],
+            _VECTOR_STORE_CACHE[
+                "chunks"
+            ],
+        )
+
+
+def get_search_pool(
+    embedded_chunks,
+    selected_document,
+):
+    if not selected_document:
+        return embedded_chunks
+
+    with _VECTOR_STORE_LOCK:
+        cached_chunks = (
+            _VECTOR_STORE_CACHE
+            .get(
+                "by_filename",
+                {},
+            )
+            .get(
+                selected_document
+            )
+        )
+
+    if cached_chunks is not None:
+        return cached_chunks
+
+    return [
+        chunk
+        for chunk in embedded_chunks
+        if chunk.get(
+            "filename"
+        ) == selected_document
+    ]
+
+
+def rebuild_vector_store():
+    """
+    The only application helper that performs ingestion/rebuild.
+
+    Call it after upload, delete, or an explicit Rebuild action.
+    Question answering never calls this function.
+    """
+    ingest_documents()
+    invalidate_vector_store_cache()
+
+    # Warm the cache once so the next question does not pay JSON load cost.
+    load_vector_store()
+
 
 
 def is_allowed_file(filename):
@@ -1584,7 +1796,386 @@ def set_model():
 
 
 # =========================================================
-# MAIN CHAT ROUTE
+# QUESTION PROCESSING
+# =========================================================
+
+def process_question(
+    question,
+    selected_top_k=3,
+):
+    """
+    Execute one RAG question without rebuilding the vector store and without
+    rendering the entire dashboard.
+
+    This function is shared by the JSON API and the normal HTML fallback.
+    """
+    started_at = time.perf_counter()
+
+    question = str(
+        question or ""
+    ).strip()
+
+    try:
+        selected_top_k = int(
+            selected_top_k
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        selected_top_k = 3
+
+    if selected_top_k not in ALLOWED_TOP_K:
+        selected_top_k = 3
+
+    if not question:
+        return {
+            "ok": False,
+            "error": "Please enter a question.",
+        }
+
+    # Cached read: this does NOT rebuild or parse store.json again unless the
+    # store file changed after upload/delete/rebuild.
+    vocabulary, idf_values, embedded_chunks = (
+        load_vector_store()
+    )
+
+    if (
+        vocabulary is None
+        or embedded_chunks is None
+    ):
+        return {
+            "ok": False,
+            "error": (
+                "Vector store not found or invalid. "
+                "Please rebuild the vector store, or ask an admin to upload documents."
+            ),
+        }
+
+    selected_document = session.get(
+        "selected_document"
+    )
+
+    search_pool = get_search_pool(
+        embedded_chunks,
+        selected_document,
+    )
+
+    if not search_pool:
+        return {
+            "ok": False,
+            "error": (
+                "No vector-store chunks were found for the selected document."
+            ),
+        }
+
+    intent_result = classify_question(
+        question
+    )
+
+    predicted_intent = intent_result.get(
+        "intent",
+        "general",
+    )
+
+    intent_confidence = float(
+        intent_result.get(
+            "confidence",
+            0.0,
+        )
+    )
+
+    model_available = bool(
+        intent_result.get(
+            "model_available",
+            False,
+        )
+    )
+
+    intent_low_confidence = bool(
+        intent_result.get(
+            "low_confidence",
+            True,
+        )
+    )
+
+    effective_top_k = get_ml_top_k(
+        predicted_intent,
+        selected_top_k,
+    )
+
+    relevant_chunks = search_chunks(
+        question=question,
+        embedded_chunks=search_pool,
+        vocabulary=vocabulary,
+        idf_values=idf_values,
+        top_k=effective_top_k,
+    )
+
+    selected_model = normalize_selected_model(
+        session.get(
+            "selected_model",
+            DEFAULT_LLM_MODEL,
+        )
+    )
+
+    generation_result = generate_answer_for_model(
+        question,
+        relevant_chunks,
+        selected_model,
+    )
+
+    answer = generation_result.get(
+        "answer",
+        "",
+    )
+
+    generation_provider = generation_result.get(
+        "provider",
+        "unknown",
+    )
+
+    generation_model = generation_result.get(
+        "model",
+        "",
+    )
+
+    generation_model_label = generation_result.get(
+        "model_label",
+        "",
+    )
+
+    generation_fallback_used = bool(
+        generation_result.get(
+            "fallback_used",
+            False,
+        )
+    )
+
+    no_context_found = (
+        "I could not find enough relevant information in the uploaded documents."
+    ).lower() in answer.lower()
+
+    if no_context_found:
+        rag_confidence = "No Match"
+    elif relevant_chunks:
+        top_score = float(
+            relevant_chunks[0].get(
+                "score",
+                0,
+            )
+        )
+        rag_confidence = get_confidence(
+            top_score
+        )
+    else:
+        rag_confidence = "No Match"
+
+    sources = []
+
+    if not no_context_found:
+        for source_index, chunk in enumerate(
+            relevant_chunks,
+            start=1,
+        ):
+            chunk_score = float(
+                chunk.get(
+                    "score",
+                    0,
+                )
+            )
+
+            if chunk_score <= 0:
+                continue
+
+            matched_keywords = chunk.get(
+                "matched_keywords",
+                [],
+            )
+
+            if isinstance(
+                matched_keywords,
+                list,
+            ):
+                matched_keywords_text = ", ".join(
+                    matched_keywords
+                )
+            else:
+                matched_keywords_text = str(
+                    matched_keywords
+                )
+
+            sources.append({
+                "index": source_index,
+                "filename": chunk.get(
+                    "filename",
+                    "Unknown",
+                ),
+                "page_number": chunk.get(
+                    "page_number"
+                ),
+                "chunk_id": chunk.get(
+                    "chunk_id",
+                    "-",
+                ),
+                "page_chunk_id": chunk.get(
+                    "page_chunk_id"
+                ),
+                "score": round(
+                    chunk_score,
+                    4,
+                ),
+                "matched_keywords": matched_keywords_text,
+                "text": safe_source_text(
+                    chunk.get(
+                        "text",
+                        "",
+                    )
+                ),
+            })
+
+    if (
+        rag_confidence in {
+            "High",
+            "Medium",
+        }
+        and sources
+    ):
+        record_relevant_question(
+            question=question,
+            selected_document=selected_document,
+            sources=sources,
+        )
+
+    chat_sessions = session.get(
+        "chat_sessions",
+        {},
+    )
+
+    active_chat_id = session.get(
+        "active_chat_id"
+    )
+
+    active_chat = chat_sessions.get(
+        active_chat_id
+    )
+
+    if active_chat is None:
+        active_chat_id, active_chat = (
+            create_chat_record()
+        )
+
+    message_data = {
+        "question": question,
+        "answer": answer,
+        "confidence": rag_confidence,
+        "sources": sources,
+        "time": datetime.now().strftime(
+            "%d-%m-%Y %I:%M:%S %p"
+        ),
+        "intent": predicted_intent.replace(
+            "_",
+            " ",
+        ).title(),
+        "intent_confidence": round(
+            intent_confidence * 100,
+            2,
+        ),
+        "intent_low_confidence": intent_low_confidence,
+        "top_k_used": (
+            0
+            if no_context_found
+            else len(sources)
+        ),
+        "ml_model_available": model_available,
+        "selected_document": selected_document,
+        "selected_model": selected_model,
+        "selected_model_label": get_model_label(
+            selected_model
+        ),
+        "generation_provider": generation_provider,
+        "generation_model": generation_model,
+        "generation_model_label": generation_model_label,
+        "generation_fallback_used": generation_fallback_used,
+    }
+
+    active_chat.setdefault(
+        "messages",
+        [],
+    )
+
+    active_chat["messages"].append(
+        message_data
+    )
+
+    active_chat["messages"] = (
+        active_chat["messages"][-MAX_CHAT_ITEMS:]
+    )
+
+    if active_chat.get(
+        "title"
+    ) == "New Chat":
+        active_chat["title"] = (
+            make_chat_title(
+                question
+            )
+        )
+
+    active_chat["updated_at"] = (
+        datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+    )
+
+    chat_sessions[active_chat_id] = (
+        active_chat
+    )
+
+    # Flask-Session stores this server-side. The browser gets only a small
+    # session-id cookie, so chat/source data no longer causes 4 KB cookie warnings.
+    session["chat_sessions"] = (
+        trim_chat_sessions(
+            chat_sessions
+        )
+    )
+    session["active_chat_id"] = (
+        active_chat_id
+    )
+    session["current_sources"] = (
+        sources
+    )
+    session.modified = True
+
+    elapsed_ms = round(
+        (
+            time.perf_counter()
+            - started_at
+        ) * 1000,
+        1,
+    )
+
+    return {
+        "ok": True,
+        "message": message_data,
+        "sources": sources,
+        "active_chat_id": active_chat_id,
+        "active_chat_title": active_chat.get(
+            "title",
+            "New Chat",
+        ),
+        "suggested_questions": get_question_suggestions(
+            selected_document
+        )[:3],
+        "learned_questions": get_learned_questions(
+            selected_document,
+            limit=2,
+        ),
+        "elapsed_ms": elapsed_ms,
+    }
+
+
+# =========================================================
+# MAIN DASHBOARD ROUTE
 # =========================================================
 
 @app.route("/", methods=["GET", "POST"])
@@ -1592,341 +2183,99 @@ def set_model():
 def home():
     initialize_chat_session()
 
-    question = ""
+    message = request.args.get(
+        "message"
+    )
+    error = request.args.get(
+        "error"
+    )
+
     selected_top_k = 3
 
-    message = request.args.get("message")
-    error = request.args.get("error")
-
+    # Normal HTML POST remains as a fallback when JavaScript is unavailable.
+    # The dashboard itself uses /api/ask, so normal questions do not reload it.
     if request.method == "POST":
-        question = request.form.get("question", "").strip()
+        result = process_question(
+            request.form.get(
+                "question",
+                "",
+            ),
+            request.form.get(
+                "top_k",
+                3,
+            ),
+        )
 
-        try:
-            selected_top_k = int(request.form.get("top_k", 3))
-        except (TypeError, ValueError):
-            selected_top_k = 3
-
-        if selected_top_k not in ALLOWED_TOP_K:
-            selected_top_k = 3
-
-        if not question:
-            error = "Please enter a question."
-
-        else:
-            vocabulary, idf_values, embedded_chunks = load_vector_store()
-
-            if vocabulary is None or embedded_chunks is None:
-                error = (
-                    "Vector store not found or invalid. "
-                    "Please rebuild the vector store, or ask an admin to upload documents."
+        if not result.get(
+            "ok"
+        ):
+            return redirect(
+                url_for(
+                    "home",
+                    error=result.get(
+                        "error",
+                        "Unable to answer question.",
+                    ),
                 )
+            )
 
-            else:
-                selected_document = session.get("selected_document")
-
-                search_pool = embedded_chunks
-
-                if selected_document:
-                    search_pool = [
-                        chunk
-                        for chunk in embedded_chunks
-                        if chunk.get("filename") == selected_document
-                    ]
-
-                if not search_pool:
-                    error = (
-                        "No vector-store chunks were found "
-                        "for the selected document."
-                    )
-
-                else:
-                    intent_result = classify_question(question)
-
-                    predicted_intent = intent_result.get(
-                        "intent",
-                        "general",
-                    )
-
-                    intent_confidence = float(
-                        intent_result.get(
-                            "confidence",
-                            0.0,
-                        )
-                    )
-
-                    model_available = bool(
-                        intent_result.get(
-                            "model_available",
-                            False,
-                        )
-                    )
-
-                    intent_low_confidence = bool(
-                        intent_result.get(
-                            "low_confidence",
-                            True,
-                        )
-                    )
-
-                    effective_top_k = get_ml_top_k(
-                        predicted_intent,
-                        selected_top_k,
-                    )
-
-                    relevant_chunks = search_chunks(
-                        question=question,
-                        embedded_chunks=search_pool,
-                        vocabulary=vocabulary,
-                        idf_values=idf_values,
-                        top_k=effective_top_k,
-                    )
-
-                    selected_model = normalize_selected_model(
-                        session.get(
-                            "selected_model",
-                            DEFAULT_LLM_MODEL,
-                        )
-                    )
-
-                    generation_result = (
-                        generate_answer_for_model(
-                            question,
-                            relevant_chunks,
-                            selected_model,
-                        )
-                    )
-
-                    answer = generation_result.get(
-                        "answer",
-                        "",
-                    )
-
-                    generation_provider = (
-                        generation_result.get(
-                            "provider",
-                            "unknown",
-                        )
-                    )
-
-                    generation_model = (
-                        generation_result.get(
-                            "model",
-                            "",
-                        )
-                    )
-
-                    generation_model_label = (
-                        generation_result.get(
-                            "model_label",
-                            "",
-                        )
-                    )
-
-                    generation_fallback_used = bool(
-                        generation_result.get(
-                            "fallback_used",
-                            False,
-                        )
-                    )
-
-                    no_context_found = (
-                        "I could not find enough relevant information "
-                        "in the uploaded documents."
-                    ).lower() in answer.lower()
-
-                    if no_context_found:
-                        rag_confidence = "No Match"
-
-                    elif relevant_chunks:
-                        top_score = float(
-                            relevant_chunks[0].get(
-                                "score",
-                                0,
-                            )
-                        )
-                        rag_confidence = get_confidence(top_score)
-
-                    else:
-                        rag_confidence = "No Match"
-
-                    sources = []
-
-                    if not no_context_found:
-                        for source_index, chunk in enumerate(
-                            relevant_chunks,
-                            start=1,
-                        ):
-                            chunk_score = float(
-                                chunk.get(
-                                    "score",
-                                    0,
-                                )
-                            )
-
-                            if chunk_score <= 0:
-                                continue
-
-                            matched_keywords = chunk.get(
-                                "matched_keywords",
-                                [],
-                            )
-
-                            if isinstance(matched_keywords, list):
-                                matched_keywords_text = ", ".join(
-                                    matched_keywords
-                                )
-                            else:
-                                matched_keywords_text = str(
-                                    matched_keywords
-                                )
-
-                            sources.append({
-                                "index": source_index,
-                                "filename": chunk.get(
-                                    "filename",
-                                    "Unknown",
-                                ),
-                                "page_number": chunk.get(
-                                    "page_number"
-                                ),
-                                "chunk_id": chunk.get(
-                                    "chunk_id",
-                                    "-",
-                                ),
-                                "page_chunk_id": chunk.get(
-                                    "page_chunk_id"
-                                ),
-                                "score": round(
-                                    chunk_score,
-                                    4,
-                                ),
-                                "matched_keywords": matched_keywords_text,
-                                "text": safe_source_text(
-                                    chunk.get(
-                                        "text",
-                                        "",
-                                    )
-                                ),
-                            })
-
-                    # Add only genuinely relevant questions to the
-                    # shared Smart Suggestions pool.
-                    if (
-                        rag_confidence in {
-                            "High",
-                            "Medium",
-                        }
-                        and sources
-                    ):
-                        record_relevant_question(
-                            question=question,
-                            selected_document=selected_document,
-                            sources=sources,
-                        )
-
-                    chat_sessions = session.get("chat_sessions", {})
-                    active_chat_id = session.get("active_chat_id")
-                    active_chat = chat_sessions.get(active_chat_id)
-
-                    if active_chat is None:
-                        active_chat_id, active_chat = create_chat_record()
-
-                    message_data = {
-                        "question": question,
-                        "answer": answer,
-                        "confidence": rag_confidence,
-                        "sources": sources,
-                        "time": datetime.now().strftime(
-                            "%d-%m-%Y %I:%M:%S %p"
-                        ),
-                        "intent": predicted_intent.replace(
-                            "_",
-                            " ",
-                        ).title(),
-                        "intent_confidence": round(
-                            intent_confidence * 100,
-                            2,
-                        ),
-                        "intent_low_confidence": intent_low_confidence,
-                        "top_k_used": (
-                            0
-                            if no_context_found
-                            else len(sources)
-                        ),
-                        "ml_model_available": model_available,
-                        "selected_document": selected_document,
-
-                        # Selected in the dropdown.
-                        "selected_model": selected_model,
-                        "selected_model_label": get_model_label(
-                            selected_model
-                        ),
-
-                        # Actually used to generate this answer.
-                        "generation_provider": generation_provider,
-                        "generation_model": generation_model,
-                        "generation_model_label": generation_model_label,
-                        "generation_fallback_used": generation_fallback_used,
-                    }
-
-                    active_chat.setdefault("messages", [])
-                    active_chat["messages"].append(message_data)
-                    active_chat["messages"] = active_chat["messages"][
-                        -MAX_CHAT_ITEMS:
-                    ]
-
-                    if active_chat.get("title") == "New Chat":
-                        active_chat["title"] = make_chat_title(question)
-
-                    active_chat["updated_at"] = datetime.now().strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-
-                    chat_sessions[active_chat_id] = active_chat
-
-                    session["chat_sessions"] = trim_chat_sessions(
-                        chat_sessions
-                    )
-                    session["active_chat_id"] = active_chat_id
-                    session["current_sources"] = sources
-                    session.modified = True
-
-                    question = ""
+        return redirect(
+            url_for(
+                "home"
+            )
+        )
 
     active_chat = get_active_chat()
 
     active_messages = (
-        active_chat.get("messages", [])
+        active_chat.get(
+            "messages",
+            [],
+        )
         if active_chat
         else []
     )
 
+    # Keep initial DOM light. Older chat items remain server-side and are still
+    # available in Download Chat.
+    rendered_messages = (
+        active_messages[-CHAT_RENDER_LIMIT:]
+    )
+
     return render_template(
         "dashboard.html",
-
-        # New 3-panel UI variables
         documents=get_documents(),
-        current_document=session.get("selected_document"),
+        current_document=session.get(
+            "selected_document"
+        ),
         chat_sessions=get_chat_sessions_for_view(),
-        active_chat_id=session.get("active_chat_id"),
+        active_chat_id=session.get(
+            "active_chat_id"
+        ),
         active_chat_title=(
-            active_chat.get("title", "New Chat")
+            active_chat.get(
+                "title",
+                "New Chat",
+            )
             if active_chat
             else "New Chat"
         ),
-        messages=active_messages,
-        current_sources=session.get("current_sources", []),
-
+        messages=rendered_messages,
+        current_sources=session.get(
+            "current_sources",
+            [],
+        ),
         suggested_questions=get_question_suggestions(
-            session.get("selected_document")
+            session.get(
+                "selected_document"
+            )
         ),
-
         recent_questions=get_recent_questions(),
-
         learned_questions=get_learned_questions(
-            session.get("selected_document")
+            session.get(
+                "selected_document"
+            )
         ),
-
         selected_model=normalize_selected_model(
             session.get(
                 "selected_model",
@@ -1934,23 +2283,60 @@ def home():
             )
         ),
         model_options=MODEL_OPTIONS,
-
-        # Compatibility for older templates.
         allowed_models=[
             option["value"]
             for option in MODEL_OPTIONS
         ],
-
-        # Existing template variables kept for compatibility
-        question=question,
+        question="",
         selected_top_k=selected_top_k,
-        chat_history=list(reversed(active_messages)),
+        chat_history=list(
+            reversed(
+                rendered_messages
+            )
+        ),
         stats=get_store_stats(),
         ml_status=get_model_status(),
         users=get_user_list(),
         current_user=current_user(),
         message=message,
         error=error,
+        chat_render_limit=CHAT_RENDER_LIMIT,
+    )
+
+
+@app.route(
+    "/api/ask",
+    methods=["POST"],
+)
+@api_login_required
+def ask_api():
+    payload = (
+        request.get_json(
+            silent=True
+        )
+        or {}
+    )
+
+    result = process_question(
+        payload.get(
+            "question",
+            "",
+        ),
+        payload.get(
+            "top_k",
+            3,
+        ),
+    )
+
+    if not result.get(
+        "ok"
+    ):
+        return jsonify(
+            result
+        ), 400
+
+    return jsonify(
+        result
     )
 
 
@@ -2002,7 +2388,7 @@ def upload_document():
     file.save(DOCUMENTS_DIR / filename)
 
     try:
-        ingest_documents()
+        rebuild_vector_store()
     except Exception as exc:
         return redirect(
             url_for(
@@ -2045,7 +2431,7 @@ def delete_document(filename):
     file_path.unlink()
 
     try:
-        ingest_documents()
+        rebuild_vector_store()
     except Exception as exc:
         return redirect(
             url_for(
@@ -2077,7 +2463,7 @@ def delete_document(filename):
 @login_required
 def rebuild_store():
     try:
-        ingest_documents()
+        rebuild_vector_store()
     except Exception as exc:
         return redirect(
             url_for(

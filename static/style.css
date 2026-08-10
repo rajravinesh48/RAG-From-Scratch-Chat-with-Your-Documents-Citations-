@@ -3681,3 +3681,48 @@ body.rag-thinking .hero-card::after {
         transform: rotate(360deg);
     }
 }
+
+
+/* =========================================================
+   PERFORMANCE V9
+   API-added content uses transform/opacity only (GPU-friendly CSS motion).
+   ========================================================= */
+
+.api-message-enter {
+    animation: apiMessageEnter .24s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.api-evidence-enter {
+    animation: apiEvidenceEnter .22s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes apiMessageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes apiEvidenceEnter {
+    from {
+        opacity: 0;
+        transform: translateX(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.send-btn:disabled {
+    cursor: wait;
+    opacity: .82;
+}
+
+#chatPerformance {
+    transition: opacity .15s ease;
+}

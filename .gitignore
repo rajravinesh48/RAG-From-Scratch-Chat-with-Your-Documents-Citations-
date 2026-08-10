@@ -16,3 +16,6 @@ users.json
 *.bak
 *.bkp
 *.tmp
+
+.runtime/
+flask_session/

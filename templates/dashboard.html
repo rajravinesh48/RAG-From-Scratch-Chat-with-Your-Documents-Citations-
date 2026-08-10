@@ -317,7 +317,7 @@
             <div class="hero-header">
                 <div>
                     <span class="hero-eyebrow">RAG Session</span>
-                    <h1>{{ active_chat_title or 'New Chat' }}</h1>
+                    <h1 id="activeChatTitle">{{ active_chat_title or 'New Chat' }}</h1>
                     <p>
                         Searching:
                         <strong>
@@ -377,7 +377,7 @@
 
 
             <div class="conversation-zone" id="conversationZone">
-                <div class="conversation-inner">
+                <div class="conversation-inner" id="conversationInner">
 
                 {% if messages %}
 
@@ -514,7 +514,7 @@
 
                 <div class="composer-footer">
                     <span>Enter to send · Shift+Enter for newline</span>
-                    <span>Latest message stays at the bottom like a chat workspace.</span>
+                    <span id="chatPerformance">No full page reload for questions.</span>
                 </div>
             </div>
         </section>
@@ -594,46 +594,35 @@
             </div>
 
 
-            {% if learned_questions %}
-
-            <div class="learned-questions">
+            <div
+                class="learned-questions"
+                id="learnedQuestionsPanel"
+                {% if not learned_questions %}hidden{% endif %}
+            >
 
                 <div class="learned-heading">
                     <span>◉</span>
 
                     <div>
                         <strong>Learned from users</strong>
-                        <small>
-                            Relevant questions saved by the RAG workspace
-                        </small>
+                        <small>Relevant questions saved by the RAG workspace</small>
                     </div>
                 </div>
 
-                <div class="learned-list">
-
+                <div class="learned-list" id="learnedQuestionsList">
                     {% for item in learned_questions[:2] %}
-
                     <button
                         type="button"
                         class="learned-chip suggestion-fill"
                         data-question="{{ item.question|e }}"
                     >
-                        <span>
-                            {{ item.question }}
-                        </span>
-
-                        <small>
-                            {{ item.count }}×
-                        </small>
+                        <span>{{ item.question }}</span>
+                        <small>{{ item.count }}×</small>
                     </button>
-
                     {% endfor %}
-
                 </div>
 
             </div>
-
-            {% endif %}
         </section>
 
 
@@ -649,7 +638,7 @@
                     </p>
                 </div>
 
-                <div class="evidence-count">
+                <div class="evidence-count" id="evidenceCount">
                     {{ current_sources|length }}
                 </div>
             </div>
@@ -810,17 +799,15 @@ const questionBox = document.querySelector(
     ".composer-form textarea[name='question']"
 );
 
-document.querySelectorAll(".suggestion-fill").forEach(function(button) {
-    button.addEventListener("click", function() {
-        if (!questionBox) {
-            return;
-        }
+document.addEventListener("click", function(event) {
+    const button = event.target.closest(".suggestion-fill");
 
-        questionBox.value =
-            this.dataset.question || "";
+    if (!button || !questionBox) {
+        return;
+    }
 
-        questionBox.focus();
-    });
+    questionBox.value = button.dataset.question || "";
+    questionBox.focus();
 });
 
 const openUserControlBtn =
@@ -1006,27 +993,299 @@ window.addEventListener(
 
 
 /* =========================================================
-   VISUAL SEND FEEDBACK
+   FAST QUESTION API - NO FULL PAGE RELOAD
 ========================================================= */
 
-const ragComposer =
-    document.getElementById("composerForm");
+const apiAskUrl = {{ url_for('ask_api')|tojson }};
+const ragLogoUrl = {{ url_for('static', filename='logo.svg')|tojson }};
+const chatRenderLimit = {{ chat_render_limit|default(12)|int }};
 
-if (ragComposer) {
-    ragComposer.addEventListener("submit", function () {
-        document.body.classList.add("rag-thinking");
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
 
-        const sendButton =
-            ragComposer.querySelector(".send-btn");
+function answerToHtml(value) {
+    return escapeHtml(value).replace(/\n/g, "<br>");
+}
 
-        if (sendButton) {
-            sendButton.disabled = true;
-            sendButton.innerHTML =
-                "<span class='send-spinner'></span>";
-        }
+function trimRenderedMessages() {
+    const blocks = Array.from(
+        document.querySelectorAll(
+            "#conversationInner .message-block"
+        )
+    );
+
+    const overflow = blocks.length - chatRenderLimit;
+
+    if (overflow > 0) {
+        blocks.slice(0, overflow).forEach(function(block) {
+            block.remove();
+        });
+    }
+}
+
+function appendMessage(message) {
+    const inner = document.getElementById("conversationInner");
+
+    if (!inner) return;
+
+    const emptyState = inner.querySelector(".empty-state-card");
+    if (emptyState) emptyState.remove();
+
+    const citationCount = Array.isArray(message.sources)
+        ? message.sources.length
+        : 0;
+
+    const modelLabel = ["local", "fallback"].includes(
+        message.generation_provider
+    )
+        ? "Fast Local RAG"
+        : (message.generation_model_label || "RAG");
+
+    const article = document.createElement("article");
+    article.className = "message-block api-message-enter";
+    article.innerHTML = `
+        <div class="message-question">
+            <div class="msg-avatar user-avatar">Q</div>
+            <div class="msg-content">
+                <span class="msg-label">Question</span>
+                <div class="question-card">${escapeHtml(message.question)}</div>
+            </div>
+        </div>
+        <div class="message-answer">
+            <div class="msg-avatar answer-avatar">
+                <img src="${ragLogoUrl}" alt="RAGFlow logo">
+            </div>
+            <div class="answer-card">
+                <span class="msg-label">Grounded Answer</span>
+                <div class="answer-tags">
+                    <span class="tag tag-green">Retrieval: ${escapeHtml(message.confidence)}</span>
+                    <span class="tag">Top-K: ${Number(message.top_k_used || 0)}</span>
+                    <span class="tag">${citationCount} Citation${citationCount === 1 ? "" : "s"}</span>
+                    <span class="tag tag-soft-green">${escapeHtml(modelLabel)}</span>
+                </div>
+                <div class="answer-text">${answerToHtml(message.answer)}</div>
+                <a href="#retrieved-evidence" class="evidence-link">View retrieved evidence →</a>
+            </div>
+        </div>
+    `;
+
+    const bottom = document.getElementById("conversationBottom");
+    inner.insertBefore(article, bottom || null);
+    trimRenderedMessages();
+}
+
+function renderEvidence(sources) {
+    const section = document.getElementById("retrieved-evidence");
+    const count = document.getElementById("evidenceCount");
+
+    if (!section || !count) return;
+
+    const list = Array.isArray(sources) ? sources : [];
+    count.textContent = list.length;
+
+    section.querySelectorAll(".evidence-list, .evidence-empty")
+        .forEach(function(node) { node.remove(); });
+
+    if (!list.length) {
+        const empty = document.createElement("div");
+        empty.className = "evidence-empty";
+        empty.innerHTML = `
+            <div class="empty-dot"></div>
+            <strong>No retrieved evidence</strong>
+            <p>No supporting chunk was returned for this answer.</p>
+        `;
+        section.appendChild(empty);
+        return;
+    }
+
+    const container = document.createElement("div");
+    container.className = "evidence-list";
+
+    list.forEach(function(source, index) {
+        const card = document.createElement("article");
+        card.className = "evidence-card api-evidence-enter";
+        const score = Number(source.score || 0).toFixed(4);
+        const page = source.page_number
+            ? ` · Page ${escapeHtml(source.page_number)}`
+            : "";
+        card.innerHTML = `
+            <div class="evidence-top">
+                <span class="evidence-index">[${index + 1}]</span>
+                <span class="evidence-score">cosine ${score}</span>
+            </div>
+            <div class="evidence-file">${escapeHtml(source.filename)}</div>
+            <div class="evidence-meta">Chunk ${escapeHtml(source.chunk_id)}${page}</div>
+            <div class="evidence-text">${escapeHtml(source.text)}</div>
+        `;
+        container.appendChild(card);
+    });
+
+    section.appendChild(container);
+}
+
+function renderSuggestions(items) {
+    const container = document.getElementById("askNextSuggestions");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(items) || !items.length) {
+        container.innerHTML = `
+            <div class="suggestion-empty-state">
+                <span class="suggestion-empty-icon">✦</span>
+                <div>
+                    <strong>No new suggestion yet</strong>
+                    <small>Ask another topic or select a different document.</small>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    items.slice(0, 3).forEach(function(item) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "suggestion-item suggestion-fill ask-next-item";
+        button.dataset.question = item.question || "";
+        const origin = item.source === "popular"
+            ? `★ Popular · ${Number(item.count || 1)}×`
+            : "▤ From document";
+        button.innerHTML = `
+            <span class="suggestion-origin ${item.source === "popular" ? "popular-origin" : ""}">${escapeHtml(origin)}</span>
+            <strong>${escapeHtml(item.question)}</strong>
+            <span class="suggestion-arrow">→</span>
+        `;
+        container.appendChild(button);
     });
 }
 
+function renderLearned(items) {
+    const panel = document.getElementById("learnedQuestionsPanel");
+    const list = document.getElementById("learnedQuestionsList");
+
+    if (!panel || !list) return;
+
+    list.innerHTML = "";
+
+    if (!Array.isArray(items) || !items.length) {
+        panel.hidden = true;
+        return;
+    }
+
+    panel.hidden = false;
+
+    items.slice(0, 2).forEach(function(item) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "learned-chip suggestion-fill";
+        button.dataset.question = item.question || "";
+        button.innerHTML = `
+            <span>${escapeHtml(item.question)}</span>
+            <small>${Number(item.count || 1)}×</small>
+        `;
+        list.appendChild(button);
+    });
+}
+
+function setQuestionLoading(loading) {
+    const sendButton = composerForm
+        ? composerForm.querySelector(".send-btn")
+        : null;
+
+    document.body.classList.toggle("rag-thinking", loading);
+
+    if (!sendButton) return;
+
+    sendButton.disabled = loading;
+    sendButton.innerHTML = loading
+        ? "<span class='send-spinner'></span>"
+        : "→";
+}
+
+async function submitQuestionWithoutReload() {
+    if (!questionInput || !composerForm) return;
+
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    const topKInput = composerForm.querySelector("input[name='top_k']");
+    const topK = topKInput ? Number(topKInput.value || 3) : 3;
+    const performance = document.getElementById("chatPerformance");
+
+    setQuestionLoading(true);
+    if (performance) performance.textContent = "Retrieving relevant chunks…";
+
+    try {
+        const response = await fetch(apiAskUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                question: question,
+                top_k: topK
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 401 && data.login_url) {
+            window.location.href = data.login_url;
+            return;
+        }
+
+        if (!response.ok || !data.ok) {
+            throw new Error(data.error || "Unable to answer the question.");
+        }
+
+        appendMessage(data.message);
+        renderEvidence(data.sources);
+        renderSuggestions(data.suggested_questions);
+        renderLearned(data.learned_questions);
+
+        const title = document.getElementById("activeChatTitle");
+        if (title && data.active_chat_title) {
+            title.textContent = data.active_chat_title;
+        }
+
+        const activeSessionTitle = document.querySelector(
+            ".session-item.active .session-text strong"
+        );
+        if (activeSessionTitle && data.active_chat_title) {
+            activeSessionTitle.textContent = data.active_chat_title;
+        }
+
+        questionInput.value = "";
+        hideAlreadyAskedSuggestions();
+        scrollChatToBottom(true);
+
+        if (performance) {
+            performance.textContent = `Answered in ${data.elapsed_ms} ms · no page reload`;
+        }
+    } catch (error) {
+        if (performance) {
+            performance.textContent = error.message || "Request failed.";
+        }
+        console.error(error);
+    } finally {
+        setQuestionLoading(false);
+        questionInput.focus();
+    }
+}
+
+if (composerForm) {
+    composerForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        submitQuestionWithoutReload();
+    });
+}
 
 
 /* =========================================================
