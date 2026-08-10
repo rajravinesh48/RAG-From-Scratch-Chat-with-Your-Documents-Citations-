@@ -29,7 +29,7 @@ load_dotenv(override=True)
 
 DEFAULT_LLM_PROVIDER = os.getenv(
     "LLM_PROVIDER",
-    "ollama",
+    "local",
 ).strip().lower()
 
 
@@ -440,23 +440,374 @@ Write the final answer using only the retrieved document context.
 # LOCAL EXTRACTIVE FALLBACK
 # =========================================================
 
+def _normalized_keywords(text):
+    """
+    Return meaningful normalized words used for lightweight
+    local question/answer matching.
+    """
+    return {
+        normalize_word(word)
+        for word in tokenize(text)
+        if normalize_word(word)
+        and normalize_word(word) not in STOPWORDS
+    }
+
+
+def _extract_qa_pairs(text):
+    """
+    Extract explicit Q: ... A: ... pairs from a retrieved chunk.
+
+    Example:
+        Q: What is a cow?
+        A: A cow is a domesticated herbivorous mammal.
+    """
+    text = str(text or "")
+
+    pattern = re.compile(
+        r"Q:\s*(.*?)\s*A:\s*(.*?)(?=(?:\s+Q:)|$)",
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    pairs = []
+
+    for match in pattern.finditer(text):
+        source_question = re.sub(
+            r"\s+",
+            " ",
+            match.group(1),
+        ).strip()
+
+        source_answer = re.sub(
+            r"\s+",
+            " ",
+            match.group(2),
+        ).strip()
+
+        source_answer = re.split(
+            r"\s*=+\s*SECTION\b|\s*=+\s*$",
+            source_answer,
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0].strip()
+
+        if source_question and source_answer:
+            pairs.append(
+                (
+                    source_question,
+                    source_answer,
+                )
+            )
+
+    return pairs
+
+
+def _extract_inline_question_answer_pairs(text):
+    """
+    Extract question -> following sentence pairs from normal prose.
+
+    Supports files written like:
+
+        1. What is RAG? RAG means Retrieval Augmented Generation.
+        2. How does RAG work? RAG works by retrieving relevant chunks.
+    """
+    sentences = split_into_sentences(
+        text
+    )
+
+    pairs = []
+
+    for index, sentence in enumerate(
+        sentences
+    ):
+        question_text = re.sub(
+            r"^\s*\d+\s*[.)-]?\s*",
+            "",
+            str(sentence or "").strip(),
+        )
+
+        if not question_text.endswith("?"):
+            continue
+
+        if index + 1 >= len(sentences):
+            continue
+
+        answer_text = str(
+            sentences[index + 1]
+        ).strip()
+
+        if answer_text.endswith("?"):
+            continue
+
+        answer_text = re.sub(
+            r"^\s*A:\s*",
+            "",
+            answer_text,
+            flags=re.IGNORECASE,
+        ).strip()
+
+        if question_text and answer_text:
+            pairs.append(
+                (
+                    question_text,
+                    answer_text,
+                )
+            )
+
+    return pairs
+
+
+def _question_similarity_score(
+    user_question,
+    source_question,
+):
+    """
+    Very fast local question similarity based on normalized keywords.
+    """
+    user_keywords = _normalized_keywords(
+        user_question
+    )
+
+    source_keywords = _normalized_keywords(
+        source_question
+    )
+
+    if not user_keywords:
+        return 0.0
+
+    overlap = len(
+        user_keywords.intersection(
+            source_keywords
+        )
+    )
+
+    if overlap == 0:
+        return 0.0
+
+    coverage = (
+        overlap
+        / len(user_keywords)
+    )
+
+    union = (
+        user_keywords
+        .union(source_keywords)
+    )
+
+    jaccard = (
+        overlap / len(union)
+        if union
+        else 0.0
+    )
+
+    return (
+        coverage * 2.0
+        + jaccard
+    )
+
+
+def _looks_like_heading(text):
+    """
+    Prevent titles/headings from being returned as the answer.
+    """
+    text = str(text or "").strip()
+
+    if not text:
+        return True
+
+    letters = [
+        char
+        for char in text
+        if char.isalpha()
+    ]
+
+    if letters:
+        uppercase_ratio = (
+            sum(
+                1
+                for char in letters
+                if char.isupper()
+            )
+            / len(letters)
+        )
+
+        if (
+            uppercase_ratio >= 0.75
+            and len(text.split()) <= 14
+        ):
+            return True
+
+    lowered = text.lower()
+
+    heading_markers = (
+        "knowledge document",
+        "test document",
+        "section ",
+        "chapter ",
+    )
+
+    return any(
+        marker in lowered
+        for marker in heading_markers
+    )
+
+
+def _answer_sentence_bonus(sentence):
+    """
+    Tie-breaker that favors natural answer statements.
+    """
+    lowered = str(
+        sentence or ""
+    ).lower()
+
+    answer_patterns = (
+        " means ",
+        " is ",
+        " are ",
+        " refers to ",
+        " works by ",
+        " uses ",
+        " includes ",
+        " provides ",
+        " allows ",
+        " contains ",
+        " helps ",
+    )
+
+    padded = f" {lowered} "
+
+    return sum(
+        1
+        for pattern in answer_patterns
+        if pattern in padded
+    )
+
+
+def clean_local_answer(answer):
+    """
+    Clean formatting artifacts from extracted answers.
+
+    Examples removed from the end:
+        QUESTION 28
+        QUESTION 12:
+        ===== SECTION 4 =====
+    """
+    answer = re.sub(
+        r"\s+",
+        " ",
+        str(answer or ""),
+    ).strip()
+
+    answer = re.sub(
+        r"\s+QUESTION\s+\d+\s*:?\s*$",
+        "",
+        answer,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    answer = re.sub(
+        r"\s*=+\s*SECTION\s+\d+.*$",
+        "",
+        answer,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    return answer
+
+
 def generate_local_fallback_answer(
     question,
     useful_chunks,
 ):
     """
-    Final emergency fallback.
+    Fast Local RAG answer generation.
 
-    This is NOT an LLM. It chooses the most relevant
-    sentence from the retrieved document chunks.
+    No Ollama, Gemini, OpenAI, or external API call is made.
+
+    Priority:
+    1. Explicit Q:/A: match.
+    2. Inline question -> following answer sentence.
+    3. Best answer-like sentence from retrieved context.
+    4. Top retrieved context as final fallback.
+
+    Everything is grounded only in retrieved chunks.
     """
-    question_keywords = get_question_keywords(
+    if not useful_chunks:
+        return NO_CONTEXT_MESSAGE
+
+    question_keywords = _normalized_keywords(
         question
     )
 
+    # -----------------------------------------------------
+    # 1. Direct FAQ matching
+    # -----------------------------------------------------
+
+    best_answer = None
+    best_pair_score = 0.0
+    best_pair_chunk_score = -1.0
+
+    for chunk in useful_chunks:
+        chunk_score = float(
+            chunk.get(
+                "score",
+                0,
+            )
+        )
+
+        chunk_text = chunk.get(
+            "text",
+            "",
+        )
+
+        candidate_pairs = (
+            _extract_qa_pairs(
+                chunk_text
+            )
+            +
+            _extract_inline_question_answer_pairs(
+                chunk_text
+            )
+        )
+
+        for source_question, source_answer in candidate_pairs:
+            pair_score = _question_similarity_score(
+                question,
+                source_question,
+            )
+
+            if (
+                pair_score > best_pair_score
+                or (
+                    pair_score == best_pair_score
+                    and pair_score > 0
+                    and chunk_score > best_pair_chunk_score
+                )
+            ):
+                best_answer = source_answer
+                best_pair_score = pair_score
+                best_pair_chunk_score = chunk_score
+
+    if (
+        best_answer
+        and best_pair_score > 0
+    ):
+        return clean_local_answer(
+            best_answer
+        )
+
+
+    # -----------------------------------------------------
+    # 2. General extractive answer selection
+    # -----------------------------------------------------
+
     best_sentence = None
-    best_sentence_score = -1
-    best_chunk_score = -1
+
+    best_rank = (
+        -1,
+        -1,
+        -1.0,
+        -1,
+    )
 
     for chunk in useful_chunks:
         chunk_score = float(
@@ -474,29 +825,81 @@ def generate_local_fallback_answer(
         )
 
         for sentence in sentences:
-            match_score = sentence_match_score(
-                sentence,
+            candidate = str(
+                sentence or ""
+            ).strip()
+
+            if not candidate:
+                continue
+
+            # Never return the question itself.
+            if candidate.endswith("?"):
+                continue
+
+            if candidate.lower().startswith(
+                "q:"
+            ):
+                continue
+
+            # Never return an obvious title/heading.
+            if _looks_like_heading(
+                candidate
+            ):
+                continue
+
+            if candidate.lower().startswith(
+                "a:"
+            ):
+                candidate = candidate[
+                    2:
+                ].strip()
+
+            keyword_score = sentence_match_score(
+                candidate,
                 question_keywords,
             )
 
-            if (
-                match_score > best_sentence_score
-                or (
-                    match_score == best_sentence_score
-                    and chunk_score > best_chunk_score
-                )
-            ):
-                best_sentence = sentence
-                best_sentence_score = match_score
-                best_chunk_score = chunk_score
+            answer_bonus = _answer_sentence_bonus(
+                candidate
+            )
 
-    if not best_sentence:
-        best_sentence = useful_chunks[0].get(
+            useful_length = min(
+                len(candidate),
+                300,
+            )
+
+            rank = (
+                keyword_score,
+                answer_bonus,
+                chunk_score,
+                useful_length,
+            )
+
+            if rank > best_rank:
+                best_sentence = candidate
+                best_rank = rank
+
+    if best_sentence:
+        return clean_local_answer(
+            best_sentence
+        )
+
+
+    # -----------------------------------------------------
+    # 3. Final grounded fallback
+    # -----------------------------------------------------
+
+    top_context = str(
+        useful_chunks[0].get(
             "text",
             "",
         )
+    ).strip()
 
-    return str(best_sentence).strip()
+    if not top_context:
+        return NO_CONTEXT_MESSAGE
+
+    return top_context
 
 
 # =========================================================
@@ -741,13 +1144,12 @@ def generate_gemini_answer(
 def detect_provider_from_model(model):
     """
     Explicit values supported:
+        local:extractive
         ollama:gemma3:4b
         gemini:gemini-3.5-flash
 
-    Bare gemini-* values are treated as Gemini for backward
-    compatibility with the current web_app.py.
-
-    Bare local model values such as gemma3:4b are Ollama.
+    Fast Local RAG is the default because it avoids network/API
+    calls and local LLM inference.
     """
     model_text = str(
         model or ""
@@ -755,25 +1157,46 @@ def detect_provider_from_model(model):
 
     lowered = model_text.lower()
 
-    if lowered.startswith("ollama:"):
+    if lowered.startswith(
+        "local:"
+    ):
+        return "local"
+
+    if lowered in {
+        "local",
+        "extractive",
+        "fast",
+        "fast-local",
+        "fast local rag",
+    }:
+        return "local"
+
+    if lowered.startswith(
+        "ollama:"
+    ):
         return "ollama"
 
-    if lowered.startswith("gemini:"):
+    if lowered.startswith(
+        "gemini:"
+    ):
         return "gemini"
 
-    if lowered.startswith("gemini-"):
+    if lowered.startswith(
+        "gemini-"
+    ):
         return "gemini"
 
     if model_text:
         return "ollama"
 
     if DEFAULT_LLM_PROVIDER in {
+        "local",
         "ollama",
         "gemini",
     }:
         return DEFAULT_LLM_PROVIDER
 
-    return "ollama"
+    return "local"
 
 
 def format_model_display_name(
@@ -791,6 +1214,9 @@ def format_model_display_name(
     model = str(
         model or ""
     ).strip()
+
+    if provider == "local":
+        return "Fast Local RAG · No LLM"
 
     if provider == "ollama":
         if model.lower().startswith(
@@ -821,7 +1247,7 @@ def format_model_display_name(
         )
 
     if provider == "fallback":
-        return "Local Extractive Fallback"
+        return "Fast Local RAG · Fallback"
 
     if provider == "none":
         return "No LLM · No Context"
@@ -905,7 +1331,7 @@ def generate_answer(
     Result:
         {
             "answer": "...",
-            "provider": "ollama" | "gemini" | "fallback" | "none",
+            "provider": "local" | "ollama" | "gemini" | "fallback" | "none",
             "model": "...",
             "model_label": "...",
             "fallback_used": True | False,
@@ -929,6 +1355,25 @@ def generate_answer(
             model="",
             preferred_provider=preferred_provider,
         )
+
+    # =====================================================
+    # FAST LOCAL RAG SELECTED
+    # =====================================================
+
+    if preferred_provider == "local":
+
+        answer = generate_local_fallback_answer(
+            question,
+            useful_chunks,
+        )
+
+        return build_generation_result(
+            answer=answer,
+            provider="local",
+            model="extractive",
+            preferred_provider=preferred_provider,
+        )
+
 
     # =====================================================
     # OLLAMA SELECTED
@@ -1000,7 +1445,7 @@ def generate_answer(
     # GEMINI SELECTED
     # =====================================================
 
-    else:
+    if preferred_provider == "gemini":
 
         if (
             GEMINI_ENABLED

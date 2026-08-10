@@ -1,5 +1,6 @@
-import re
 import math
+import re
+
 import numpy as np
 
 
@@ -10,7 +11,7 @@ STOPWORDS = {
 
 
 def tokenize(text):
-    text = text.lower()
+    text = str(text or "").lower()
     words = re.findall(r"\b[a-zA-Z0-9]+\b", text)
 
     clean_words = []
@@ -26,7 +27,7 @@ def build_vocabulary(chunks):
     vocabulary = {}
 
     for chunk in chunks:
-        words = tokenize(chunk["text"])
+        words = tokenize(chunk.get("text", ""))
 
         for word in words:
             if word not in vocabulary:
@@ -43,18 +44,31 @@ def calculate_idf(chunks, vocabulary):
         document_count = 0
 
         for chunk in chunks:
-            words = tokenize(chunk["text"])
+            words = tokenize(chunk.get("text", ""))
 
             if word in words:
                 document_count += 1
 
-        idf_values[word] = math.log((total_documents + 1) / (document_count + 1)) + 1
+        idf_values[word] = (
+            math.log(
+                (total_documents + 1)
+                / (document_count + 1)
+            )
+            + 1
+        )
 
     return idf_values
 
 
-def text_to_vector(text, vocabulary, idf_values=None):
-    vector = np.zeros(len(vocabulary))
+def text_to_vector(
+    text,
+    vocabulary,
+    idf_values=None,
+):
+    vector = np.zeros(
+        len(vocabulary),
+        dtype=float,
+    )
 
     words = tokenize(text)
 
@@ -64,36 +78,79 @@ def text_to_vector(text, vocabulary, idf_values=None):
     word_frequency = {}
 
     for word in words:
-        word_frequency[word] = word_frequency.get(word, 0) + 1
+        word_frequency[word] = (
+            word_frequency.get(word, 0)
+            + 1
+        )
 
     for word, count in word_frequency.items():
-        if word in vocabulary:
-            index = vocabulary[word]
 
-            tf = count / len(words)
+        if word not in vocabulary:
+            continue
 
-            if idf_values and word in idf_values:
-                vector[index] = tf * idf_values[word]
-            else:
-                vector[index] = tf
+        index = vocabulary[word]
+        tf = count / len(words)
+
+        if (
+            idf_values
+            and word in idf_values
+        ):
+            vector[index] = (
+                tf * idf_values[word]
+            )
+        else:
+            vector[index] = tf
 
     return vector
 
 
 def create_chunk_embeddings(chunks):
+    """
+    Create TF-IDF vectors for every chunk.
+
+    IMPORTANT:
+    All existing chunk metadata is preserved, including:
+      - filename
+      - page_number
+      - chunk_id
+      - page_chunk_id
+      - text
+
+    This is required so PDF page citations survive from
+    ingest.py -> vector_store/store.json -> retriever.py -> web_app.py.
+    """
+
     vocabulary = build_vocabulary(chunks)
-    idf_values = calculate_idf(chunks, vocabulary)
+
+    idf_values = calculate_idf(
+        chunks,
+        vocabulary,
+    )
 
     embedded_chunks = []
 
     for chunk in chunks:
-        vector = text_to_vector(chunk["text"], vocabulary, idf_values)
 
-        embedded_chunks.append({
-            "filename": chunk.get("filename"),
-            "chunk_id": chunk["chunk_id"],
-            "text": chunk["text"],
-            "embedding": vector.tolist()
-        })
+        vector = text_to_vector(
+            chunk.get("text", ""),
+            vocabulary,
+            idf_values,
+        )
 
-    return embedded_chunks, vocabulary, idf_values
+        # Copy all original metadata instead of rebuilding only
+        # a subset of the fields.
+        embedded_chunk = dict(chunk)
+
+        embedded_chunk["embedding"] = (
+            vector.tolist()
+        )
+
+        embedded_chunks.append(
+            embedded_chunk
+        )
+
+    return (
+        embedded_chunks,
+        vocabulary,
+        idf_values,
+    )

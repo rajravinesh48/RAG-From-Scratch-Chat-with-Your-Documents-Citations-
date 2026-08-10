@@ -1,0 +1,86 @@
+[
+    {
+        "question": "What is a fish?",
+        "key": "fish",
+        "count": 7,
+        "last_asked": "2026-08-10 18:25:18",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt"
+        ]
+    },
+    {
+        "question": "what is rag?",
+        "key": "rag",
+        "count": 6,
+        "last_asked": "2026-08-10 18:25:12",
+        "documents": [
+            "rag.txt"
+        ]
+    },
+    {
+        "question": "What is an amphibian?",
+        "key": "amphibian",
+        "count": 5,
+        "last_asked": "2026-08-10 18:25:23",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt",
+            "living_things_animals_birds_water_animals.txt"
+        ]
+    },
+    {
+        "question": "What are animals?",
+        "key": "animal",
+        "count": 3,
+        "last_asked": "2026-08-08 21:57:32",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt",
+            "living_things_animals_birds_water_animals.txt"
+        ]
+    },
+    {
+        "question": "and eggs. Q: What is a fish?",
+        "key": "egg fish",
+        "count": 2,
+        "last_asked": "2026-08-10 18:29:10",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt",
+            "living_things_animals_birds_water_animals.txt"
+        ]
+    },
+    {
+        "question": "What is a bird?",
+        "key": "bird",
+        "count": 2,
+        "last_asked": "2026-08-10 18:25:39",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt"
+        ]
+    },
+    {
+        "question": "fish, insects, and many other groups. Q: What is a mammal?",
+        "key": "fish group insect mammal many other",
+        "count": 2,
+        "last_asked": "2026-08-10 18:25:28",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt"
+        ]
+    },
+    {
+        "question": "Is fish an animal?",
+        "key": "animal fish",
+        "count": 1,
+        "last_asked": "2026-08-10 18:24:17",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt"
+        ]
+    },
+    {
+        "question": "What is a mammal?",
+        "key": "mammal",
+        "count": 1,
+        "last_asked": "2026-08-08 21:45:15",
+        "documents": [
+            "animal_bird_fish_duck_extended_qa.txt"
+        ]
+    }
+]

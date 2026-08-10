@@ -1,6 +1,7 @@
 import inspect
 import json
 import os
+import re
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
@@ -34,12 +35,16 @@ app.secret_key = os.environ.get(
 DOCUMENTS_DIR = Path("documents")
 VECTOR_STORE_FILE = Path("vector_store/store.json")
 USERS_FILE = Path("users.json")
+QUESTION_HISTORY_FILE = Path("question_history.json")
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 ALLOWED_TOP_K = {1, 2, 3, 5}
 MAX_CHAT_ITEMS = 10
 MAX_CHAT_SESSIONS = 8
 MAX_SOURCE_TEXT_LENGTH = 800
+MAX_QUESTION_SUGGESTIONS = 16
+MAX_SHARED_QUESTION_HISTORY = 150
+MAX_RECENT_QUESTIONS = 5
 
 # =========================================================
 # LLM MODEL CONFIGURATION
@@ -47,7 +52,7 @@ MAX_SOURCE_TEXT_LENGTH = 800
 
 LLM_PROVIDER = os.getenv(
     "LLM_PROVIDER",
-    "ollama",
+    "local",
 ).strip().lower()
 
 OLLAMA_MODEL = os.getenv(
@@ -63,13 +68,21 @@ GEMINI_MODEL = os.getenv(
 
 def build_model_options():
     """
-    Models exposed in the UI.
+    Answer modes exposed in the UI.
 
-    Prefixes tell generator.py which provider to use:
+    Fast Local RAG is the default and does not call an external LLM.
+
+    Prefixes tell generator.py which answer mode/provider to use:
+        local:extractive
         ollama:<model>
         gemini:<model>
     """
     options = [
+        {
+            "value": "local:extractive",
+            "label": "Fast Local RAG · No LLM",
+            "provider": "local",
+        },
         {
             "value": f"ollama:{OLLAMA_MODEL}",
             "label": (
@@ -115,11 +128,9 @@ ALLOWED_LLM_MODELS = {
 }
 
 
-DEFAULT_LLM_MODEL = (
-    f"gemini:{GEMINI_MODEL}"
-    if LLM_PROVIDER == "gemini"
-    else f"ollama:{OLLAMA_MODEL}"
-)
+# Always start the web application in the fastest mode.
+# Ollama and Gemini remain selectable optional enhancements.
+DEFAULT_LLM_MODEL = "local:extractive"
 
 
 def normalize_selected_model(model):
@@ -134,6 +145,15 @@ def normalize_selected_model(model):
 
     if model in ALLOWED_LLM_MODELS:
         return model
+
+    if model.lower() in {
+        "local",
+        "extractive",
+        "fast",
+        "fast-local",
+        "fast local rag",
+    }:
+        return "local:extractive"
 
     if model.startswith("gemini-"):
         prefixed = f"gemini:{model}"
@@ -322,6 +342,770 @@ def search_chunks(question, embedded_chunks, vocabulary, idf_values, top_k):
         )
 
 
+
+QUESTION_SUGGESTION_STOPWORDS = {
+    "what",
+    "who",
+    "where",
+    "when",
+    "why",
+    "how",
+    "which",
+    "whose",
+    "whom",
+    "is",
+    "are",
+    "was",
+    "were",
+    "do",
+    "does",
+    "did",
+    "can",
+    "could",
+    "will",
+    "would",
+    "should",
+    "a",
+    "an",
+    "the",
+    "this",
+    "that",
+    "these",
+    "those",
+    "of",
+    "to",
+    "in",
+    "on",
+    "at",
+    "for",
+    "from",
+    "with",
+    "and",
+    "or",
+    "as",
+    "by",
+    "tell",
+    "explain",
+    "define",
+    "describe",
+    "please",
+    "about",
+    "me",
+}
+
+
+def normalize_suggestion_word(word):
+    word = str(
+        word or ""
+    ).lower().strip()
+
+    if (
+        len(word) > 4
+        and word.endswith("ies")
+    ):
+        return word[:-3] + "y"
+
+    if (
+        len(word) > 3
+        and word.endswith("s")
+        and not word.endswith("ss")
+    ):
+        return word[:-1]
+
+    return word
+
+
+def suggestion_terms(question):
+    """
+    Meaningful terms used only for suggestion de-duplication.
+
+    Examples:
+        What is an animal?
+        What are animals?
+    both reduce to:
+        {"animal"}
+    """
+    words = re.findall(
+        r"\b[a-zA-Z0-9]+\b",
+        str(question or "").lower(),
+    )
+
+    return {
+        normalize_suggestion_word(word)
+        for word in words
+        if (
+            normalize_suggestion_word(word)
+            and normalize_suggestion_word(word)
+            not in QUESTION_SUGGESTION_STOPWORDS
+            and len(
+                normalize_suggestion_word(word)
+            ) > 1
+        )
+    }
+
+
+def suggestion_key(question):
+    terms = suggestion_terms(
+        question
+    )
+
+    if terms:
+        return " ".join(
+            sorted(terms)
+        )
+
+    return re.sub(
+        r"[^a-z0-9]+",
+        " ",
+        str(question or "").lower(),
+    ).strip()
+
+
+def clean_suggested_question(question):
+    """
+    Clean headings, Q: prefixes and separator artifacts before a
+    question is allowed into the UI.
+    """
+    question = re.sub(
+        r"\s+",
+        " ",
+        str(question or ""),
+    ).strip()
+
+    question = re.sub(
+        r"^(?:Q\s*:\s*)+",
+        "",
+        question,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    question = re.sub(
+        r"^\d+\s*[.)-]\s*",
+        "",
+        question,
+    ).strip()
+
+    # Reject accidental section separators / broken extraction.
+    if (
+        not question
+        or question.count("=") >= 3
+        or question.count("_") >= 6
+        or len(question) < 6
+        or len(question) > 160
+    ):
+        return ""
+
+    if not re.search(
+        r"[A-Za-z]{2,}",
+        question,
+    ):
+        return ""
+
+    # Suggestions should look like questions.
+    if not question.endswith("?"):
+        question += "?"
+
+    return question
+
+
+def are_near_duplicate_questions(
+    question_a,
+    question_b,
+):
+    terms_a = suggestion_terms(
+        question_a
+    )
+
+    terms_b = suggestion_terms(
+        question_b
+    )
+
+    if not terms_a or not terms_b:
+        return (
+            suggestion_key(question_a)
+            == suggestion_key(question_b)
+        )
+
+    if terms_a == terms_b:
+        return True
+
+    intersection = len(
+        terms_a.intersection(
+            terms_b
+        )
+    )
+
+    union = len(
+        terms_a.union(
+            terms_b
+        )
+    )
+
+    if union == 0:
+        return False
+
+    jaccard = (
+        intersection
+        / union
+    )
+
+    # High overlap means the user would perceive the two suggestions
+    # as essentially the same question.
+    return jaccard >= 0.80
+
+
+def add_unique_suggestion(
+    collection,
+    candidate,
+):
+    question = clean_suggested_question(
+        candidate.get(
+            "question",
+            "",
+        )
+    )
+
+    if not question:
+        return False
+
+    for existing in collection:
+        if are_near_duplicate_questions(
+            question,
+            existing.get(
+                "question",
+                "",
+            ),
+        ):
+            return False
+
+    item = dict(candidate)
+    item["question"] = question
+
+    collection.append(
+        item
+    )
+
+    return True
+
+
+def extract_questions_from_text(text):
+    """
+    Extract clean question prompts from indexed document chunks.
+
+    Supported examples:
+        Q: What is RAG?
+        1. What is RAG?
+        What is RAG?
+    """
+    text = str(
+        text or ""
+    )
+
+    candidates = []
+
+    # Explicit Q: format.
+    for match in re.finditer(
+        r"(?:^|\s)Q:\s*([^?\n]{3,150}\?)",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        cleaned = clean_suggested_question(
+            match.group(1)
+        )
+
+        if cleaned:
+            candidates.append(
+                cleaned
+            )
+
+    # Ordinary question sentences.
+    for match in re.finditer(
+        r"(?:^|[.!]\s+|\n)\s*(?:\d+\s*[.)-]\s*)?([^?\n]{3,150}\?)",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        cleaned = clean_suggested_question(
+            match.group(1)
+        )
+
+        if cleaned:
+            candidates.append(
+                cleaned
+            )
+
+    return candidates
+
+
+def load_shared_question_history():
+    """
+    Global suggestion history.
+
+    Only questions that produced relevant RAG evidence are recorded.
+    No username or personal data is stored.
+    """
+    if not QUESTION_HISTORY_FILE.exists():
+        return []
+
+    try:
+        with open(
+            QUESTION_HISTORY_FILE,
+            "r",
+            encoding="utf-8",
+        ) as file:
+            data = json.load(
+                file
+            )
+
+        if not isinstance(
+            data,
+            list,
+        ):
+            return []
+
+        return data
+
+    except Exception as exc:
+        print(
+            "[Question History] Unable to read history:",
+            exc,
+        )
+
+        return []
+
+
+def save_shared_question_history(history):
+    try:
+        with open(
+            QUESTION_HISTORY_FILE,
+            "w",
+            encoding="utf-8",
+        ) as file:
+            json.dump(
+                history[
+                    :MAX_SHARED_QUESTION_HISTORY
+                ],
+                file,
+                indent=4,
+                ensure_ascii=False,
+            )
+
+    except Exception as exc:
+        print(
+            "[Question History] Unable to save history:",
+            exc,
+        )
+
+
+def record_relevant_question(
+    question,
+    selected_document,
+    sources,
+):
+    """
+    Add a user question to the shared suggestion pool only when
+    RAG actually found supporting evidence.
+
+    Repeated/near-identical questions increase popularity instead
+    of creating duplicate suggestions.
+    """
+    cleaned_question = (
+        clean_suggested_question(
+            question
+        )
+    )
+
+    if (
+        not cleaned_question
+        or not sources
+    ):
+        return
+
+    key = suggestion_key(
+        cleaned_question
+    )
+
+    source_documents = sorted({
+        str(
+            source.get(
+                "filename",
+                "",
+            )
+        ).strip()
+        for source in sources
+        if source.get(
+            "filename"
+        )
+    })
+
+    history = (
+        load_shared_question_history()
+    )
+
+    existing_item = None
+
+    for item in history:
+        if (
+            item.get(
+                "key"
+            ) == key
+            or are_near_duplicate_questions(
+                cleaned_question,
+                item.get(
+                    "question",
+                    "",
+                ),
+            )
+        ):
+            existing_item = item
+            break
+
+    now = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    if existing_item is not None:
+        existing_item["count"] = (
+            int(
+                existing_item.get(
+                    "count",
+                    0,
+                )
+            )
+            + 1
+        )
+
+        existing_item["last_asked"] = now
+
+        documents = set(
+            existing_item.get(
+                "documents",
+                [],
+            )
+        )
+
+        documents.update(
+            source_documents
+        )
+
+        if selected_document:
+            documents.add(
+                selected_document
+            )
+
+        existing_item["documents"] = sorted(
+            documents
+        )
+
+    else:
+        documents = set(
+            source_documents
+        )
+
+        if selected_document:
+            documents.add(
+                selected_document
+            )
+
+        history.append({
+            "question": cleaned_question,
+            "key": key,
+            "count": 1,
+            "last_asked": now,
+            "documents": sorted(
+                documents
+            ),
+        })
+
+    # Popular first, then recently asked.
+    history.sort(
+        key=lambda item: (
+            int(
+                item.get(
+                    "count",
+                    0,
+                )
+            ),
+            item.get(
+                "last_asked",
+                "",
+            ),
+        ),
+        reverse=True,
+    )
+
+    save_shared_question_history(
+        history
+    )
+
+
+def get_learned_questions(
+    selected_document=None,
+    limit=4,
+):
+    """
+    Return relevant questions learned from user activity.
+
+    Unlike Ask Next, this list may include a question the current
+    user just asked. This makes it visible in the UI that a relevant
+    user question was learned and stored.
+
+    No username is stored in question_history.json.
+    """
+    history = load_shared_question_history()
+
+    learned = []
+
+    for item in history:
+        question = clean_suggested_question(
+            item.get(
+                "question",
+                "",
+            )
+        )
+
+        if not question:
+            continue
+
+        documents = set(
+            item.get(
+                "documents",
+                [],
+            )
+        )
+
+        if (
+            selected_document
+            and selected_document not in documents
+        ):
+            continue
+
+        learned.append({
+            "question": question,
+            "count": int(
+                item.get(
+                    "count",
+                    1,
+                )
+            ),
+            "last_asked": item.get(
+                "last_asked",
+                "",
+            ),
+        })
+
+        if len(learned) >= limit:
+            break
+
+    return learned
+
+
+
+def get_recent_questions(
+    limit=MAX_RECENT_QUESTIONS,
+):
+    """
+    Current user's recent question history.
+
+    This list is shown separately in the UI and is also excluded from
+    Smart Suggestions so the user sees something new to ask.
+    """
+    messages = get_active_messages()
+
+    recent = []
+    seen = []
+
+    for message in reversed(
+        messages
+    ):
+        question = (
+            clean_suggested_question(
+                message.get(
+                    "question",
+                    "",
+                )
+            )
+        )
+
+        if not question:
+            continue
+
+        if any(
+            are_near_duplicate_questions(
+                question,
+                old_question,
+            )
+            for old_question in seen
+        ):
+            continue
+
+        seen.append(
+            question
+        )
+
+        recent.append(
+            question
+        )
+
+        if len(recent) >= limit:
+            break
+
+    return recent
+
+
+def get_question_suggestions(
+    selected_document=None,
+    limit=MAX_QUESTION_SUGGESTIONS,
+):
+    """
+    Smart suggestion order:
+
+    1. Useful questions previously asked by users.
+    2. Questions extracted from indexed documents.
+    3. Recent questions in the current chat are excluded.
+    4. Near duplicates are excluded.
+
+    Returned item format:
+        {
+            "question": "...?",
+            "source": "popular" | "document",
+            "count": 3
+        }
+    """
+    try:
+        vocabulary, idf_values, embedded_chunks = (
+            load_vector_store()
+        )
+
+        if (
+            vocabulary is None
+            or embedded_chunks is None
+        ):
+            return []
+
+        recent_questions = (
+            get_recent_questions()
+        )
+
+        suggestions = []
+
+        def is_recent(question):
+            return any(
+                are_near_duplicate_questions(
+                    question,
+                    recent_question,
+                )
+                for recent_question
+                in recent_questions
+            )
+
+        # -------------------------------------------------
+        # A. Relevant questions asked by users
+        # -------------------------------------------------
+
+        shared_history = (
+            load_shared_question_history()
+        )
+
+        for item in shared_history:
+            question = (
+                clean_suggested_question(
+                    item.get(
+                        "question",
+                        "",
+                    )
+                )
+            )
+
+            if not question:
+                continue
+
+            documents = set(
+                item.get(
+                    "documents",
+                    [],
+                )
+            )
+
+            if (
+                selected_document
+                and selected_document
+                not in documents
+            ):
+                continue
+
+            if is_recent(
+                question
+            ):
+                continue
+
+            add_unique_suggestion(
+                suggestions,
+                {
+                    "question": question,
+                    "source": "popular",
+                    "count": int(
+                        item.get(
+                            "count",
+                            1,
+                        )
+                    ),
+                },
+            )
+
+            if len(suggestions) >= limit:
+                return suggestions
+
+        # -------------------------------------------------
+        # B. Questions directly found in documents
+        # -------------------------------------------------
+
+        chunks = embedded_chunks
+
+        if selected_document:
+            chunks = [
+                chunk
+                for chunk in embedded_chunks
+                if chunk.get(
+                    "filename"
+                )
+                == selected_document
+            ]
+
+        for chunk in chunks:
+            for question in extract_questions_from_text(
+                chunk.get(
+                    "text",
+                    "",
+                )
+            ):
+                if is_recent(
+                    question
+                ):
+                    continue
+
+                add_unique_suggestion(
+                    suggestions,
+                    {
+                        "question": question,
+                        "source": "document",
+                        "count": 0,
+                    },
+                )
+
+                if len(suggestions) >= limit:
+                    return suggestions
+
+        return suggestions
+
+    except Exception as exc:
+        print(
+            "[Suggestions] Unable to build suggestions:",
+            exc,
+        )
+
+        return []
+
+
 def safe_source_text(text):
     text = str(text or "")
     if len(text) <= MAX_SOURCE_TEXT_LENGTH:
@@ -406,11 +1190,17 @@ def generate_answer_for_model(
             result or ""
         ).strip(),
         "provider": (
-            "gemini"
+            "local"
             if selected_model.startswith(
-                "gemini:"
+                "local:"
             )
-            else "ollama"
+            else (
+                "gemini"
+                if selected_model.startswith(
+                    "gemini:"
+                )
+                else "ollama"
+            )
         ),
         "model": selected_model.split(
             ":",
@@ -465,12 +1255,19 @@ def initialize_chat_session():
 
     session.setdefault("selected_document", None)
     session.setdefault("current_sources", [])
-    session["selected_model"] = normalize_selected_model(
-        session.get(
-            "selected_model",
-            DEFAULT_LLM_MODEL,
+    # One-time migration to the faster default answer mode.
+    # Existing users may still have Ollama/Gemini stored in their Flask session.
+    if not session.get("fast_local_rag_v1"):
+        session["selected_model"] = DEFAULT_LLM_MODEL
+        session["fast_local_rag_v1"] = True
+
+    else:
+        session["selected_model"] = normalize_selected_model(
+            session.get(
+                "selected_model",
+                DEFAULT_LLM_MODEL,
+            )
         )
-    )
 
     session.modified = True
 
@@ -663,7 +1460,7 @@ def set_model():
         return redirect(
             url_for(
                 "home",
-                error="Invalid LLM model selected.",
+                error="Invalid answer mode selected.",
             )
         )
 
@@ -900,6 +1697,21 @@ def home():
                                 ),
                             })
 
+                    # Add only genuinely relevant questions to the
+                    # shared Smart Suggestions pool.
+                    if (
+                        rag_confidence in {
+                            "High",
+                            "Medium",
+                        }
+                        and sources
+                    ):
+                        record_relevant_question(
+                            question=question,
+                            selected_document=selected_document,
+                            sources=sources,
+                        )
+
                     chat_sessions = session.get("chat_sessions", {})
                     active_chat_id = session.get("active_chat_id")
                     active_chat = chat_sessions.get(active_chat_id)
@@ -992,6 +1804,17 @@ def home():
         ),
         messages=active_messages,
         current_sources=session.get("current_sources", []),
+
+        suggested_questions=get_question_suggestions(
+            session.get("selected_document")
+        ),
+
+        recent_questions=get_recent_questions(),
+
+        learned_questions=get_learned_questions(
+            session.get("selected_document")
+        ),
+
         selected_model=normalize_selected_model(
             session.get(
                 "selected_model",

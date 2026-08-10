@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">RAGFlow logo</title>
+  <desc id="desc">A rounded square logo with document and retrieval nodes.</desc>
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0B5A90"/>
+      <stop offset="100%" stop-color="#2E90C9"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#EAF6FC"/>
+      <stop offset="100%" stop-color="#CDE6F4"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="28" fill="url(#g1)"/>
+  <rect x="24" y="24" width="80" height="80" rx="20" fill="none" stroke="rgba(255,255,255,0.32)" stroke-width="3"/>
+  <rect x="44" y="38" width="24" height="30" rx="5" fill="url(#g2)"/>
+  <path d="M62 38v10h10" fill="none" stroke="#0B5A90" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="84" cy="48" r="6" fill="#DDF4FF"/>
+  <circle cx="84" cy="80" r="6" fill="#DDF4FF"/>
+  <circle cx="50" cy="84" r="6" fill="#DDF4FF"/>
+  <path d="M67 52h11M80 54l-22 27M56 84h22" fill="none" stroke="#DDF4FF" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="84" cy="48" r="2.2" fill="#0B5A90"/>
+  <circle cx="84" cy="80" r="2.2" fill="#0B5A90"/>
+  <circle cx="50" cy="84" r="2.2" fill="#0B5A90"/>
+</svg>

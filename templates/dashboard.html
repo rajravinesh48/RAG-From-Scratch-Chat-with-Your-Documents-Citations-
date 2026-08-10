@@ -1,874 +1,675 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
-
-    <title>Scholar - RAG From Scratch</title>
-
+    <title>RAGFlow Dashboard</title>
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
 </head>
-
 <body>
 
-<!-- =====================================================
-     TOP HEADER
-===================================================== -->
-
-<header class="top-header">
-
-    <div class="header-brand">
-
-        <div class="brand-icon">
-            ▣
+<header class="topbar">
+    <div class="brand-wrap">
+        <div class="brand-mark">
+            <img
+                src="{{ url_for('static', filename='logo.svg') }}"
+                alt="RAGFlow logo"
+            >
         </div>
 
-        <div>
-            <div class="brand-small">
+        <div class="brand-copy">
+            <span class="brand-eyebrow">
                 RAG · FROM SCRATCH
-            </div>
-
-            <div class="brand-name">
-                Scholar
-            </div>
+            </span>
+            <strong class="brand-title">
+                RAGFlow
+            </strong>
         </div>
-
     </div>
 
+    <div class="topbar-right">
+        <a
+            href="#" id="openUserControlBtn"
+            class="top-action"
+        >
+            USER CONTROL
+        </a>
 
-    <div class="header-user">
-
-        <div class="user-info">
-
-            <strong>
-                {{ current_user.username }}
-            </strong>
-
-            <small>
-                {{ current_user.role }}
-            </small>
-
+        <div class="user-meta">
+            <strong>{{ current_user.username }}</strong>
+            <span>{{ current_user.role }}</span>
         </div>
 
         <a
             href="{{ url_for('logout') }}"
             class="logout-btn"
         >
-            ↪ SIGN OUT
+            SIGN OUT
         </a>
-
     </div>
-
 </header>
 
 
-<!-- =====================================================
-     MESSAGES
-===================================================== -->
+<div class="dashboard-shell">
 
-{% if message %}
-<div class="global-message success-message">
-    {{ message }}
-</div>
-{% endif %}
-
-{% if error %}
-<div class="global-message error-message">
-    {{ error }}
-</div>
-{% endif %}
-
-
-<!-- =====================================================
-     MAIN APPLICATION
-===================================================== -->
-
-<div class="app-layout">
-
-
-    <!-- =================================================
+    <!-- =====================================================
          LEFT SIDEBAR
-    ================================================== -->
+    ====================================================== -->
 
-    <aside class="left-panel">
+    <aside class="sidebar-left">
 
+        <section class="panel-card compact-card">
+            <div class="panel-heading">
+                <div class="step-badge">1</div>
 
-        <!-- LIBRARY -->
-
-        <section class="sidebar-section">
-
-            <div class="section-title">
-                LIBRARY
+                <div>
+                    <h3>Document Ingestion</h3>
+                    <p>Upload source documents</p>
+                </div>
             </div>
 
-
-            {% if current_user.role == "admin" %}
-
             <form
-                class="upload-form"
-                action="{{ url_for('upload_document') }}"
+                class="upload-box"
                 method="post"
+                action="{{ url_for('upload_document') }}"
                 enctype="multipart/form-data"
             >
+                <div class="upload-icon-wrap">↑</div>
 
-                <label
-                    for="document-upload"
-                    class="upload-dropzone"
-                >
+                <strong>Add a source document</strong>
 
-                    <div class="upload-icon">
-                        ☁
-                    </div>
+                <span>PDF · TXT · DOCX</span>
 
-                    <div class="upload-title">
-                        Drop files or click to browse
-                    </div>
-
-                    <div class="upload-types">
-                        PDF · DOCX · TXT
-                    </div>
-
-                    <span class="choose-file-button">
-                        CHOOSE FILE
-                    </span>
-
+                <label class="file-button">
+                    <input
+                        type="file"
+                        name="document"
+                        required
+                    >
+                    <span>Choose file</span>
                 </label>
 
-                <input
-                    id="document-upload"
-                    type="file"
-                    name="document"
-                    accept=".pdf,.txt,.docx"
-                    hidden
-                    onchange="this.form.submit()"
-                >
-
+                <small>Text is extracted locally before indexing.</small>
             </form>
-
-            {% endif %}
-
         </section>
 
 
-
-        <!-- DOCUMENTS -->
-
-        <section class="sidebar-section documents-section">
-
-            <div class="section-heading-row">
-
-                <div class="section-title">
-                    DOCUMENTS · {{ documents|length }}
+        <section class="panel-card grow-card">
+            <div class="panel-heading">
+                <div>
+                    <h3>Document Scope</h3>
+                    <p>{{ documents|length }} indexed files</p>
                 </div>
+            </div>
 
-                {% if current_document %}
+            <div class="document-list">
 
                 <form
                     method="post"
                     action="{{ url_for('select_all_documents') }}"
+                    class="doc-row full-width-form"
                 >
-
                     <button
-                        type="submit"
-                        class="text-button"
+                        type="button"
+                        class="doc-pill {% if not current_document %}active{% endif %}"
                     >
-                        ALL
+                        <span class="check-square">✓</span>
+                        <span>All Documents</span>
                     </button>
-
                 </form>
 
-                {% endif %}
-
-            </div>
-
-
-            <!-- ALL DOCUMENTS -->
-
-            <form
-                method="post"
-                action="{{ url_for('select_all_documents') }}"
-            >
-
-                <button
-                    type="submit"
-                    class="
-                        doc-item
-                        {% if not current_document %}
-                            active
-                        {% endif %}
-                    "
-                >
-
-                    <span class="doc-checkbox">
-                        {% if not current_document %}
-                            ✓
-                        {% endif %}
-                    </span>
-
-                    <span class="doc-name">
-                        All Documents
-                    </span>
-
-                </button>
-
-            </form>
-
-
-            <!-- DOCUMENT LIST -->
-
-            {% for doc in documents %}
-
-            <div class="document-row">
-
-                <form
-                    method="post"
-                    action="{{ url_for(
-                        'select_document',
-                        filename=doc
-                    ) }}"
-                    class="document-select-form"
-                >
-
-                    <button
-                        type="submit"
-                        class="
-                            doc-item
-                            {% if current_document == doc %}
-                                active
-                            {% endif %}
-                        "
-                        title="{{ doc }}"
+                {% for doc in documents %}
+                <div class="doc-row">
+                    <form
+                        method="post"
+                        action="{{ url_for('select_document', filename=doc) }}"
+                        class="full-width-form"
                     >
+                        <button
+                            class="doc-pill {% if current_document == doc %}active{% endif %}"
+                            type="submit"
+                        >
+                            <span class="doc-mini-icon">▤</span>
+                            <span class="doc-name">{{ doc }}</span>
+                        </button>
+                    </form>
 
-                        <span class="doc-checkbox">
-
-                            {% if current_document == doc %}
-                                ✓
-                            {% endif %}
-
-                        </span>
-
-                        <span class="doc-icon">
-                            ▤
-                        </span>
-
-                        <span class="doc-name">
-                            {{ doc }}
-                        </span>
-
-                    </button>
-
-                </form>
-
-
-                {% if current_user.role == "admin" %}
-
-                <form
-                    method="post"
-                    action="{{ url_for(
-                        'delete_document',
-                        filename=doc
-                    ) }}"
-                >
-
-                    <button
-                        type="submit"
-                        class="doc-delete"
-                        title="Delete document"
-                        onclick="
-                            return confirm(
-                                'Delete this document?'
-                            );
-                        "
+                    {% if current_user.role == 'admin' %}
+                    <form
+                        method="post"
+                        action="{{ url_for('delete_document', filename=doc) }}"
                     >
-                        ×
-                    </button>
-
-                </form>
-
-                {% endif %}
-
-            </div>
-
-            {% endfor %}
-
-        </section>
-
-
-
-        <!-- CHATS -->
-
-        <section class="sidebar-section chat-list-section">
-
-            <div class="section-heading-row">
-
-                <div class="section-title">
-                    CHATS · {{ chat_sessions|length }}
+                        <button
+                            type="submit"
+                            class="mini-remove"
+                            aria-label="Remove document"
+                            onclick="return confirm('Delete {{ doc }} and rebuild the vector store?');"
+                        >
+                            ×
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
-
-            </div>
-
-
-            <form
-                method="post"
-                action="{{ url_for('new_chat') }}"
-            >
-
-                <button
-                    type="submit"
-                    class="new-chat-btn"
-                >
-                    ＋ NEW CHAT
-                </button>
-
-            </form>
-
-
-            <div class="chat-list">
-
-                {% for chat in chat_sessions %}
-
-                <form
-                    method="post"
-                    action="{{ url_for(
-                        'select_chat',
-                        chat_id=chat.id
-                    ) }}"
-                >
-
-                    <button
-                        type="submit"
-                        class="
-                            chat-item
-                            {% if active_chat_id == chat.id %}
-                                active
-                            {% endif %}
-                        "
-                    >
-
-                        <span class="chat-icon">
-                            ▢
-                        </span>
-
-                        <span class="chat-info">
-
-                            <strong>
-                                {{ chat.title }}
-                            </strong>
-
-                            <small>
-                                {{ chat.messages|length }}
-                                message{% if chat.messages|length != 1 %}s{% endif %}
-                            </small>
-
-                        </span>
-
-                    </button>
-
-                </form>
-
                 {% endfor %}
 
             </div>
-
         </section>
 
-        {% if current_user.role == "admin" %}
 
-            <section class="sidebar-section admin-users-section">
+        <section class="panel-card compact-card">
+            <div class="panel-heading">
+                <div class="step-badge">2</div>
 
-                <div class="section-heading-row">
-                    <div class="section-title">
-                        USER MANAGEMENT
-                    </div>
-
-                    <span class="user-count">
-                        {{ users|length }} USERS
-                    </span>
+                <div>
+                    <h3>Conversation Workspace</h3>
+                    <p>Only the latest 2 chats are shown</p>
                 </div>
+            </div>
 
-
-                <!-- CREATE USER -->
-
+            <div class="workspace-actions">
                 <form
                     method="post"
-                    action="{{ url_for('create_user') }}"
-                    class="create-user-form"
+                    action="{{ url_for('new_chat') }}"
+                    class="full-width-form"
                 >
-
-                    <input
-                        type="text"
-                        name="new_username"
-                        placeholder="Username"
-                        autocomplete="off"
-                        required
-                    >
-
-                    <input
-                        type="password"
-                        name="new_password"
-                        placeholder="Password (minimum 6 characters)"
-                        minlength="6"
-                        required
-                    >
-
-                    <select name="new_role">
-
-                        <option value="user">
-                            User
-                        </option>
-
-                        <option value="admin">
-                            Admin
-                        </option>
-
-                    </select>
-
                     <button
                         type="submit"
-                        class="create-user-btn"
+                        class="primary-btn"
                     >
-                        + CREATE USER
+                        + New RAG Session
                     </button>
+                </form>
+            </div>
 
+            <div class="session-list">
+                {% set recent_chats = chat_sessions[:2] if chat_sessions else [] %}
+                {% if recent_chats %}
+                    {% for chat in recent_chats %}
+                    <form
+                        method="post"
+                        action="{{ url_for('select_chat', chat_id=chat.id) }}"
+                    >
+                        <button
+                            type="submit"
+                            class="session-item {% if active_chat_id == chat.id %}active{% endif %}"
+                        >
+                            <span class="session-icon">◫</span>
+
+                            <span class="session-text">
+                                <strong>{{ chat.title }}</strong>
+                                <small>Recent session</small>
+                            </span>
+                        </button>
+                    </form>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-inline">
+                        No chat sessions yet.
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+
+        <section class="panel-card compact-card">
+            <div class="panel-heading">
+                <div class="step-badge">3</div>
+
+                <div>
+                    <h3>JSON Vector Store</h3>
+                    <p>Vectors + source metadata</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span>Status</span>
+                    <strong>Ready</strong>
+                </div>
+
+                <div class="stat-box">
+                    <span>Chunks</span>
+                    <strong>{{ stats.total_chunks }}</strong>
+                </div>
+
+                <div class="stat-box">
+                    <span>Vocabulary</span>
+                    <strong>{{ stats.vocabulary_size }}</strong>
+                </div>
+
+                <div class="stat-box">
+                    <span>Documents</span>
+                    <strong>{{ documents|length }}</strong>
+                </div>
+            </div>
+
+            <div class="admin-actions">
+                <form
+                    method="post"
+                    action="{{ url_for('rebuild_store') }}"
+                    class="full-width-form"
+                >
+                    <button
+                        type="submit"
+                        class="secondary-btn"
+                        onclick="return confirm('Rebuild the JSON vector store now?');"
+                    >
+                        ↻ Rebuild JSON Vector Store
+                    </button>
                 </form>
 
-
-                <!-- EXISTING USERS -->
-
-                <div class="existing-users-title">
-                    EXISTING USERS
-                </div>
-
-
-                <div class="users-list">
-
-                    {% for user in users %}
-
-                    <div class="user-management-row">
-
-                        <div class="managed-user-info">
-
-                            <div class="managed-user-avatar">
-                                {{ user.username[0]|upper }}
-                            </div>
-
-                            <div class="managed-user-text">
-
-                                <strong>
-                                    {{ user.username }}
-                                </strong>
-
-                                <small>
-                                    {{ user.role }}
-                                </small>
-
-                            </div>
-
-                        </div>
-
-
-                        {% if user.username != current_user.username %}
-
-                        <form
-                            method="post"
-                            action="{{ url_for(
-                                'delete_user',
-                                username=user.username
-                            ) }}"
+                <div class="double-action-row">
+                    <form
+                        method="post"
+                        action="{{ url_for('download_chat') }}"
+                        class="full-width-form"
+                    >
+                        <button
+                            type="submit"
+                            class="plain-btn"
                         >
+                            Download Chat
+                        </button>
+                    </form>
 
-                            <button
-                                type="submit"
-                                class="delete-user-btn"
-                                title="Delete user"
-                                onclick="
-                                    return confirm(
-                                        'Are you sure you want to delete {{ user.username }}?'
-                                    );
-                                "
-                            >
-                                ×
-                            </button>
-
-                        </form>
-
-                        {% else %}
-
-                        <span class="current-user-label">
-                            YOU
-                        </span>
-
-                        {% endif %}
-
-                    </div>
-
-                    {% endfor %}
-
+                    <form
+                        method="post"
+                        action="{{ url_for('clear_chat') }}"
+                        class="full-width-form"
+                    >
+                        <button
+                            type="submit"
+                            class="danger-btn"
+                        >
+                            Clear Chat
+                        </button>
+                    </form>
                 </div>
-
-            </section>
-
-        {% endif %}
-
-        <!-- LEFT FOOTER -->
-
-        <div class="sidebar-bottom">
-
-            <!-- Available to both ADMIN and USER -->
-            <form
-                method="post"
-                action="{{ url_for('rebuild_store') }}"
-            >
-                <button
-                    type="submit"
-                    class="secondary-button"
-                    title="Rebuild vector store from all current documents"
-                    onclick="
-                        return confirm(
-                            'Rebuild the vector store from all current documents?'
-                        );
-                    "
-                >
-                    ↻ Rebuild Vector Store
-                </button>
-            </form>
-
-            <form
-                method="post"
-                action="{{ url_for('download_chat') }}"
-            >
-                <button class="secondary-button">
-                    Download Chat
-                </button>
-            </form>
-
-
-            <form
-                method="post"
-                action="{{ url_for('clear_chat') }}"
-            >
-                <button class="clear-button">
-                    Clear Chat
-                </button>
-            </form>
-
-        </div>
+            </div>
+        </section>
 
     </aside>
 
 
 
-    <!-- =================================================
-         CENTER CHAT
-    ================================================== -->
+    <!-- =====================================================
+         CENTER CONTENT
+    ====================================================== -->
 
-    <main class="center-panel">
+    <main class="main-stage">
 
+        <section class="hero-card">
+            <div class="hero-header">
+                <div>
+                    <span class="hero-eyebrow">RAG Session</span>
+                    <h1>{{ active_chat_title or 'New Chat' }}</h1>
+                    <p>
+                        Searching:
+                        <strong>All {{ documents|length }} documents</strong>
+                    </p>
+                </div>
 
-        <!-- CHAT HEADER -->
+                <div class="hero-actions">
+                    <div class="mode-pill">
+                        <span class="mode-badge">CORE RAG</span>
 
-        <div class="chat-header">
+                        <div class="mode-copy">
+                            <strong>Retrieval + Citations</strong>
+                            <small>No external LLM required</small>
+                        </div>
+                    </div>
 
-            <div>
-
-                <small>
-                    SESSION
-                </small>
-
-                <h2>
-                    {{ active_chat_title }}
-                </h2>
-
-            </div>
-
-
-            <div class="chat-header-right">
-
-                <span class="document-scope">
-
-                    {% if current_document %}
-                        1 DOC SCOPED
-                    {% else %}
-                        {{ documents|length }} DOCS
-                    {% endif %}
-
-                </span>
-
-
-                <form
-                    method="post"
-                    action="{{ url_for('set_model') }}"
-                >
-
-                    <select
-                        name="model"
-                        onchange="this.form.submit()"
-                        class="model-select"
+                    <form
+                        method="post"
+                        action="{{ url_for('clear_chat') }}"
                     >
-
-                        {% for model in model_options %}
-
-                        <option
-                            value="{{ model.value }}"
-                            {% if selected_model == model.value %}
-                                selected
-                            {% endif %}
+                        <button
+                            type="submit"
+                            class="ghost-btn"
                         >
-                            {{ model.label }}
-                        </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </form>
-
+                            Clear Chat
+                        </button>
+                    </form>
+                </div>
             </div>
 
-        </div>
+            <div class="pipeline-bar">
+                <div class="pipeline-step done">1 <span>Ingest</span></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step done">2 <span>Chunk</span></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step done">3 <span>Vectorize</span></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step done">4 <span>Store</span></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step active">5 <span>Retrieve</span></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">6 <span>Generate</span></div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">7 <span>Cite</span></div>
+            </div>
 
-        <!-- CHAT MESSAGES -->
-           <div class="messages-area" id="messagesArea">
-                {% if not messages %}
-                    <div class="empty-chat">
-                        <div class="empty-icon">▣</div>
 
-                        <h3>
-                            Ask questions about your documents
-                        </h3>
+            <div class="conversation-zone" id="conversationZone">
+                <div class="conversation-inner">
+
+                {% if messages %}
+
+                    {% for msg in messages %}
+                    <article class="message-block">
+                        <div class="message-question">
+                            <div class="msg-avatar user-avatar">Q</div>
+
+                            <div class="msg-content">
+                                <span class="msg-label">
+                                    Question
+                                </span>
+
+                                <div class="question-card">
+                                    {{ msg.question }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message-answer">
+                            <div class="msg-avatar answer-avatar">
+                                <img
+                                    src="{{ url_for('static', filename='logo.svg') }}"
+                                    alt="RAGFlow logo"
+                                >
+                            </div>
+
+                            <div class="answer-card">
+                                <span class="msg-label">
+                                    Grounded Answer
+                                </span>
+
+                                <div class="answer-tags">
+                                    <span class="tag tag-green">
+                                        Retrieval: {{ msg.confidence }}
+                                    </span>
+
+                                    <span class="tag">
+                                        Top-K: {{ msg.top_k_used }}
+                                    </span>
+
+                                    <span class="tag">
+                                        {{ msg.sources|length }} Citation{% if msg.sources|length != 1 %}s{% endif %}
+                                    </span>
+
+                                    <span class="tag tag-soft-green">
+                                        {% if msg.generation_provider in ['local', 'fallback'] %}
+                                            Fast Local RAG
+                                        {% else %}
+                                            {{ msg.generation_model_label }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="answer-text">
+                                    {{ msg.answer|safe }}
+                                </div>
+
+                                <a
+                                    href="#retrieved-evidence"
+                                    class="evidence-link"
+                                >
+                                    View retrieved evidence →
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="empty-state-card">
+                        <div class="empty-logo">
+                            <img
+                                src="{{ url_for('static', filename='logo.svg') }}"
+                                alt="RAGFlow logo"
+                            >
+                        </div>
+
+                        <h2>Ask a question from your documents</h2>
 
                         <p>
-                            Select documents and ask a question
-                            to start your RAG session.
+                            RAGFlow uses your indexed files, retrieves the most
+                            relevant chunks and shows grounded answers with
+                            supporting citations.
                         </p>
+
+                        <div class="empty-example">
+                            Try: “What is cosine similarity?”
+                        </div>
                     </div>
+
                 {% endif %}
 
+                <div id="conversationBottom"></div>
+                </div>
+            </div>
 
-                {% for msg in messages %}
+            <button
+                type="button"
+                class="scroll-latest-btn"
+                id="scrollLatestBtn"
+                title="Jump to latest message"
+            >↓</button>
 
-                    <!-- =========================================
-                        USER MESSAGE
-                    ========================================== -->
+            <div class="composer-shell">
+                <form
+                    method="post"
+                    action="{{ url_for('home') }}"
+                    class="composer-form"
+                    id="composerForm"
+                >
+                    <textarea
+                        name="question"
+                        id="questionInput"
+                        placeholder="Ask a question about the indexed documents..."
+                        required
+                    ></textarea>
 
-                    <div class="chat-row user-row">
-
-                        <div class="message-avatar user-avatar">
-                            ♙
-                        </div>
-
-                        <div class="message-content">
-
-                            <div class="message-role">
-                                YOU
-                            </div>
-
-                            <div class="message-text user-text">
-                                {{ msg.question }}
-                            </div>
-
-                        </div>
-
-                    </div>
-                    <!-- END USER MESSAGE -->
-
-
-                    <!-- =========================================
-                        ASSISTANT MESSAGE
-                    ========================================== -->
-
-                    <div
-                        class="chat-row assistant-row source-enabled-message"
-                        data-sources='{{ msg.sources|tojson|forceescape }}'
+                    <input
+                        type="hidden"
+                        name="top_k"
+                        value="3"
                     >
 
-                        <div class="message-avatar assistant-avatar">
-                            ✦
-                        </div>
+                    <button
+                        type="submit"
+                        class="send-btn"
+                        aria-label="Send"
+                    >
+                        →
+                    </button>
+                </form>
 
-                        <div class="message-content">
-
-                            <div class="message-role">
-                                ASSISTANT
-                            </div>
-
-
-                            <div class="answer-meta">
-
-                                <span>
-                                    {{ msg.intent }}
-                                </span>
-
-                                <span>
-                                    RAG: {{ msg.confidence }}
-                                </span>
-
-                                <span>
-                                    {{ msg.top_k_used }}
-                                    Source{% if msg.top_k_used != 1 %}s{% endif %}
-                                </span>
-
-                                {% if msg.generation_model_label %}
-                                <span
-                                    class="generation-model-badge"
-                                    title="Model that actually generated this answer"
-                                >
-                                    {{ msg.generation_model_label }}
-                                </span>
-                                {% elif msg.selected_model_label %}
-                                <span class="generation-model-badge">
-                                    {{ msg.selected_model_label }}
-                                </span>
-                                {% endif %}
-
-                                {% if msg.generation_fallback_used %}
-                                <span
-                                    class="generation-fallback-badge"
-                                    title="The selected provider was unavailable, so another generator answered."
-                                >
-                                    Fallback
-                                </span>
-                                {% endif %}
-
-                            </div>
-
-
-                            <div class="message-text assistant-text">
-                                {{ msg.answer }}
-                            </div>
-
-                        </div>
-
-                    </div>
-                    <!-- END ASSISTANT MESSAGE -->
-
-                {% endfor %}
-
+                <div class="composer-footer">
+                    <span>Enter to send · Shift+Enter for newline</span>
+                    <span>Latest message stays at the bottom like a chat workspace.</span>
+                </div>
             </div>
-        <!-- CHAT INPUT -->
-
-        <div class="composer-wrapper">
-
-            <form
-                class="chat-input-form"
-                method="post"
-                action="{{ url_for('home') }}"
-            >
-
-                <textarea
-                    id="questionInput"
-                    name="question"
-                    placeholder="Ask a question about the selected documents..."
-                    required
-                ></textarea>
-
-
-                <input
-                    type="hidden"
-                    name="top_k"
-                    value="3"
-                >
-
-
-                <button
-                    type="submit"
-                    class="send-button"
-                    title="Send question"
-                >
-                    ➤
-                </button>
-
-            </form>
-
-
-            <div class="composer-help">
-                PRESS ENTER TO SEND · SHIFT+ENTER FOR NEWLINE
-            </div>
-
-        </div>
+        </section>
 
     </main>
 
 
 
-    <!-- =================================================
-         RIGHT SOURCES
-    ================================================== -->
+    <!-- =====================================================
+         RIGHT SIDEBAR
+    ====================================================== -->
 
-    <aside class="right-panel">
+    <aside class="sidebar-right">
 
-        <div class="sources-header">
-            <div class="section-title">
-                SOURCES ·
-                <span id="sourceCount">
-                    {{ current_sources|length }}
-                </span>
+        <section class="panel-card compact-card">
+            <div class="panel-heading right-header">
+                <div class="heading-icon">
+                    <img
+                        src="{{ url_for('static', filename='logo.svg') }}"
+                        alt="RAGFlow logo"
+                    >
+                </div>
+
+                <div>
+                    <h3>Ask Next</h3>
+                    <p>Smart suggestions from indexed knowledge</p>
+                </div>
             </div>
-        </div>
 
-        <div id="dynamicSources">
+            <div class="suggestions-list" id="askNextSuggestions">
 
-            {% if current_sources %}
+                {% if suggested_questions %}
 
-                {% for source in current_sources %}
+                    {% for item in suggested_questions[:4] %}
 
-                <div class="source-card">
-
-                    <div class="source-top">
-                        <span class="source-number">
-                            [{{ loop.index }}]
+                    <button
+                        type="button"
+                        class="suggestion-item suggestion-fill"
+                        data-question="{{ item.question|e }}"
+                    >
+                        <span class="suggestion-origin
+                            {% if item.source == 'popular' %}popular-origin{% endif %}
+                        ">
+                            {% if item.source == 'popular' %}
+                                ★ Popular · {{ item.count }}×
+                            {% else %}
+                                ▤ From document
+                            {% endif %}
                         </span>
 
-                        <span class="source-score">
-                            score {{ source.score }}
+                        <strong>
+                            {{ item.question }}
+                        </strong>
+
+                        <span class="suggestion-arrow">
+                            →
                         </span>
+                    </button>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="suggestion-empty-state">
+                        <span class="suggestion-empty-icon">✦</span>
+
+                        <div>
+                            <strong>No new suggestion yet</strong>
+                            <small>
+                                Add Q/A-style content or ask a relevant question.
+                            </small>
+                        </div>
                     </div>
 
-                    <div class="source-file">
-                        ▤ {{ source.filename }}
+                {% endif %}
+
+            </div>
+
+
+            {% if learned_questions %}
+
+            <div class="learned-questions">
+
+                <div class="learned-heading">
+                    <span>◉</span>
+
+                    <div>
+                        <strong>Learned from users</strong>
+                        <small>
+                            Relevant questions saved by the RAG workspace
+                        </small>
                     </div>
+                </div>
 
-                    <div class="source-meta">
+                <div class="learned-list">
 
-                        {% if source.page_number %}
-                            Page {{ source.page_number }} ·
-                        {% endif %}
+                    {% for item in learned_questions[:3] %}
 
-                        Chunk {{ source.chunk_id }}
+                    <button
+                        type="button"
+                        class="learned-chip suggestion-fill"
+                        data-question="{{ item.question|e }}"
+                    >
+                        <span>
+                            {{ item.question }}
+                        </span>
 
-                        {% if source.matched_keywords %}
-                            · {{ source.matched_keywords }}
-                        {% endif %}
+                        <small>
+                            {{ item.count }}×
+                        </small>
+                    </button>
 
-                    </div>
-
-                    <div class="source-text">
-                        {{ source.text }}
-                    </div>
+                    {% endfor %}
 
                 </div>
 
-                {% endfor %}
-
-            {% else %}
-
-                <div class="empty-sources">
-                    Sources used by the latest answer
-                    will appear here.
-                </div>
+            </div>
 
             {% endif %}
+        </section>
 
-        </div>
+
+        <section
+            class="panel-card grow-card"
+            id="retrieved-evidence"
+        >
+            <div class="panel-heading">
+                <div>
+                    <h3>Retrieved Evidence</h3>
+                    <p>
+                        TF-IDF + NumPy cosine similarity
+                    </p>
+                </div>
+
+                <div class="evidence-count">
+                    {{ current_sources|length }}
+                </div>
+            </div>
+
+            {% if current_sources %}
+            <div class="evidence-list">
+                {% for source in current_sources %}
+                <article class="evidence-card">
+                    <div class="evidence-top">
+                        <span class="evidence-index">[{{ loop.index }}]</span>
+                        <span class="evidence-score">
+                            cosine {{ '%.4f'|format(source.score) if source.score is not none else '—' }}
+                        </span>
+                    </div>
+
+                    <div class="evidence-file">
+                        {{ source.filename }}
+                    </div>
+
+                    <div class="evidence-meta">
+                        Chunk {{ source.chunk_id if source.chunk_id is defined else loop.index }}
+                    </div>
+
+                    <div class="evidence-text">
+                        {{ source.text }}
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="evidence-empty">
+                <div class="empty-dot"></div>
+                <strong>No retrieved evidence yet</strong>
+                <p>
+                    Matching chunks will appear here with citations after a
+                    question is asked.
+                </p>
+            </div>
+            {% endif %}
+        </section>
 
     </aside>
 
@@ -876,168 +677,215 @@
 
 
 
+{% if current_user.role == "admin" %}
+
+<div
+    class="user-modal"
+    id="userControlModal"
+    aria-hidden="true"
+>
+    <div
+        class="user-modal-backdrop"
+        data-close-user-modal
+    ></div>
+
+    <section class="user-modal-dialog">
+
+        <div class="user-modal-head">
+            <div>
+                <span>ADMINISTRATION</span>
+                <h3>User Control</h3>
+                <p>Create and manage application users.</p>
+            </div>
+
+            <button
+                type="button"
+                class="user-modal-close"
+                data-close-user-modal
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="user-modal-body">
+
+            <form
+                method="post"
+                action="{{ url_for('create_user') }}"
+                class="user-create-form"
+            >
+                <h4>Create User</h4>
+
+                <input
+                    name="new_username"
+                    placeholder="Username"
+                    required
+                >
+
+                <input
+                    type="password"
+                    name="new_password"
+                    placeholder="Password"
+                    minlength="6"
+                    required
+                >
+
+                <select
+                    name="new_role"
+                    required
+                >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    + Create User
+                </button>
+            </form>
+
+            <div class="user-list-box">
+                <h4>Existing Users</h4>
+
+                {% for user in users %}
+                <div class="user-list-row">
+                    <div>
+                        <strong>{{ user.username }}</strong>
+                        <small>{{ user.role }}</small>
+                    </div>
+
+                    {% if user.username == current_user.username %}
+                        <span class="current-user-pill">Current</span>
+                    {% else %}
+                        <form
+                            method="post"
+                            action="{{ url_for('delete_user', username=user.username) }}"
+                        >
+                            <button
+                                type="submit"
+                                class="user-delete-btn"
+                                onclick="return confirm('Delete user {{ user.username }}?');"
+                            >
+                                Delete
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+    </section>
+</div>
+
+{% endif %}
+
+
 <script>
 
-const questionInput = document.getElementById(
-    "questionInput"
+const questionBox = document.querySelector(
+    ".composer-form textarea[name='question']"
 );
 
-const chatForm = document.querySelector(
-    ".chat-input-form"
-);
-
-
-questionInput.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (
-            event.key === "Enter"
-            &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
-            if (
-                questionInput.value.trim()
-            ) {
-                chatForm.submit();
-            }
+document.querySelectorAll(".suggestion-fill").forEach(function(button) {
+    button.addEventListener("click", function() {
+        if (!questionBox) {
+            return;
         }
-    }
-);
 
+        questionBox.value =
+            this.dataset.question || "";
 
-// Scroll to latest message.
-const messagesArea = document.getElementById(
-    "messagesArea"
-);
+        questionBox.focus();
+    });
+});
 
-if (messagesArea) {
-    messagesArea.scrollTop =
-        messagesArea.scrollHeight;
+const openUserControlBtn =
+    document.getElementById("openUserControlBtn");
+
+const userControlModal =
+    document.getElementById("userControlModal");
+
+function closeUserModal() {
+    if (!userControlModal) return;
+
+    userControlModal.classList.remove("open");
+    userControlModal.setAttribute("aria-hidden", "true");
 }
 
-document.querySelectorAll(
-    ".source-enabled-message"
-).forEach(function(message) {
+if (openUserControlBtn && userControlModal) {
+    openUserControlBtn.addEventListener("click", function(event) {
+        event.preventDefault();
+        userControlModal.classList.add("open");
+        userControlModal.setAttribute("aria-hidden", "false");
+    });
+}
 
-    message.addEventListener(
-        "click",
-        function() {
+document.querySelectorAll("[data-close-user-modal]").forEach(function(el) {
+    el.addEventListener("click", closeUserModal);
+});
 
-            const sources = JSON.parse(
-                this.dataset.sources || "[]"
-            );
-
-            renderSources(sources);
-        }
-    );
-
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeUserModal();
+    }
 });
 
 
-function escapeHtml(value) {
+const conversationZone = document.getElementById("conversationZone");
+const scrollLatestBtn = document.getElementById("scrollLatestBtn");
+const composerForm = document.getElementById("composerForm");
+const questionInput = document.getElementById("questionInput");
 
-    const div = document.createElement("div");
+function scrollChatToBottom(smooth = false) {
+    if (!conversationZone) return;
 
-    div.textContent = value || "";
-
-    return div.innerHTML;
+    requestAnimationFrame(function () {
+        conversationZone.scrollTo({
+            top: conversationZone.scrollHeight,
+            behavior: smooth ? "smooth" : "auto"
+        });
+    });
 }
 
+window.addEventListener("load", function () {
+    scrollChatToBottom(false);
+});
 
-function renderSources(sources) {
+if (conversationZone) {
+    conversationZone.addEventListener("scroll", function () {
+        if (!scrollLatestBtn) return;
 
-    const container =
-        document.getElementById(
-            "dynamicSources"
-        );
+        const distance =
+            conversationZone.scrollHeight
+            - conversationZone.scrollTop
+            - conversationZone.clientHeight;
 
-    const count =
-        document.getElementById(
-            "sourceCount"
-        );
+        scrollLatestBtn.classList.toggle("show", distance > 160);
+    });
+}
 
-    count.textContent = sources.length;
+if (scrollLatestBtn) {
+    scrollLatestBtn.addEventListener("click", function () {
+        scrollChatToBottom(true);
+    });
+}
 
-    if (!sources.length) {
+if (questionInput && composerForm) {
+    questionInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
 
-        container.innerHTML = `
-            <div class="empty-sources">
-                No supporting sources were found
-                for this answer.
-            </div>
-        `;
-
-        return;
-    }
-
-
-    container.innerHTML = sources.map(
-        function(source, index) {
-
-            return `
-                <div class="source-card">
-
-                    <div class="source-top">
-
-                        <span class="source-number">
-                            [${index + 1}]
-                        </span>
-
-                        <span class="source-score">
-                            score ${source.score}
-                        </span>
-
-                    </div>
-
-                    <div class="source-file">
-                        ▤ ${escapeHtml(
-                            source.filename
-                        )}
-                    </div>
-
-                    <div class="source-meta">
-                        ${
-                            source.page_number
-                                ? "Page " +
-                                  escapeHtml(
-                                      String(
-                                          source.page_number
-                                      )
-                                  ) +
-                                  " · "
-                                : ""
-                        }
-                        Chunk ${escapeHtml(
-                            String(source.chunk_id)
-                        )}
-                        ${
-                            source.matched_keywords
-                                ? " · " +
-                                  escapeHtml(
-                                      source.matched_keywords
-                                  )
-                                : ""
-                        }
-                    </div>
-
-                    <div class="source-text">
-                        ${escapeHtml(
-                            source.text
-                        )}
-                    </div>
-
-                </div>
-            `;
+            if (questionInput.value.trim()) {
+                composerForm.requestSubmit();
+            }
         }
-    ).join("");
+    });
 }
 
 </script>
-
-
 </body>
 </html>

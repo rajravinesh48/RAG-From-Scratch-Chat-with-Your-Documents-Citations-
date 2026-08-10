@@ -2,94 +2,174 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scholar - Sign In</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>RAGFlow Login</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='login.css') }}"
+    >
 </head>
 <body>
 
-<div class="login-page">
+<div class="login-bg">
+    <span class="orb orb-one"></span>
+    <span class="orb orb-two"></span>
+    <span class="bg-grid"></span>
+</div>
 
-    <section class="login-visual-panel">
-        <div class="visual-top">
-            <div class="brand-mark">▣</div>
-            <div>
-                <div class="brand-eyebrow">RAG · FROM SCRATCH</div>
-                <div class="brand-name">Scholar</div>
+<main class="login-shell">
+
+    <section class="login-brand-panel">
+        <div class="brand-panel-top">
+            <div class="login-brand">
+                <div class="login-brand-logo">
+                    <img
+                        src="{{ url_for('static', filename='logo.svg') }}"
+                        alt="RAGFlow logo"
+                    >
+                </div>
+
+                <div>
+                    <span class="login-brand-eyebrow">
+                        RAG · FROM SCRATCH
+                    </span>
+                    <strong class="login-brand-title">
+                        RAGFlow
+                    </strong>
+                </div>
+            </div>
+
+            <div class="ready-pill">
+                <span class="ready-dot"></span>
+                RAG Workspace Ready
             </div>
         </div>
 
-        <div class="visual-content">
-            <span class="visual-kicker">DOCUMENT INTELLIGENCE</span>
+        <div class="brand-panel-content">
+            <span class="mini-kicker">
+                DOCUMENT INTELLIGENCE
+            </span>
 
             <h1>
-                Ask your documents.<br>
-                Get grounded answers.
+                Ask your documents.
+                <span>Get grounded answers.</span>
             </h1>
 
             <p>
-                Scholar combines retrieval, citations and local language models
-                to answer questions directly from your uploaded documents.
+                A fast document-based RAG workspace with retrieval,
+                citations, TF-IDF vectors and a clean role-based UI.
             </p>
 
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">◎</div>
+            <div class="flow-board">
+                <div class="flow-step">
+                    <b>1</b>
                     <div>
-                        <strong>Grounded RAG</strong>
-                        <span>Answers are generated from retrieved source context.</span>
+                        <strong>Ingest</strong>
+                        <small>PDF · TXT · DOCX</small>
                     </div>
                 </div>
+                <div class="flow-line"></div>
 
-                <div class="feature-card">
-                    <div class="feature-icon">◫</div>
+                <div class="flow-step">
+                    <b>2</b>
                     <div>
-                        <strong>Source Citations</strong>
-                        <span>See document, chunk and PDF page behind every answer.</span>
+                        <strong>Vectorize</strong>
+                        <small>TF-IDF</small>
                     </div>
                 </div>
+                <div class="flow-line"></div>
 
-                <div class="feature-card">
-                    <div class="feature-icon">✦</div>
+                <div class="flow-step">
+                    <b>3</b>
                     <div>
-                        <strong>Local LLM Ready</strong>
-                        <span>Supports Ollama + Gemma with optional Gemini fallback.</span>
+                        <strong>Retrieve</strong>
+                        <small>NumPy cosine</small>
+                    </div>
+                </div>
+                <div class="flow-line"></div>
+
+                <div class="flow-step">
+                    <b>4</b>
+                    <div>
+                        <strong>Answer</strong>
+                        <small>Grounded output</small>
                     </div>
                 </div>
             </div>
+
+            <div class="brand-feature-grid">
+                <article class="brand-feature">
+                    <span class="feature-icon">◎</span>
+                    <div>
+                        <strong>Grounded Retrieval</strong>
+                        <p>Answers are based on top matching document chunks.</p>
+                    </div>
+                </article>
+
+                <article class="brand-feature">
+                    <span class="feature-icon">◫</span>
+                    <div>
+                        <strong>Transparent Citations</strong>
+                        <p>See filename, chunk and similarity evidence clearly.</p>
+                    </div>
+                </article>
+
+                <article class="brand-feature">
+                    <span class="feature-icon">⚡</span>
+                    <div>
+                        <strong>Fast Local RAG</strong>
+                        <p>No external LLM is required for the core project flow.</p>
+                    </div>
+                </article>
+
+                <article class="brand-feature">
+                    <span class="feature-icon">◇</span>
+                    <div>
+                        <strong>Clean Role Access</strong>
+                        <p>Separate administrator and user workspace controls.</p>
+                    </div>
+                </article>
+            </div>
         </div>
 
-        <div class="visual-footer">
-            <span class="status-dot"></span>
-            Scholar RAG Workspace
+        <div class="brand-tags">
+            <span>Python</span>
+            <span>Flask</span>
+            <span>NumPy</span>
+            <span>JSON Vector Store</span>
         </div>
     </section>
 
 
     <section class="login-form-panel">
 
-        <div class="mobile-brand">
-            <div class="brand-mark">▣</div>
-            <div>
-                <div class="brand-eyebrow">RAG · FROM SCRATCH</div>
-                <div class="brand-name">Scholar</div>
-            </div>
-        </div>
-
         <div class="login-card">
+            <div class="login-accent"></div>
 
-            <div class="login-heading">
-                <span class="login-label">WELCOME BACK</span>
-                <h2>Sign in to Scholar</h2>
-                <p>
-                    Access your document workspace and continue your RAG sessions.
-                </p>
+            <div class="card-head">
+                <div class="card-icon">
+                    <img
+                        src="{{ url_for('static', filename='logo.svg') }}"
+                        alt="RAGFlow logo"
+                    >
+                </div>
+
+                <div>
+                    <span class="card-label">Secure Workspace</span>
+                    <h2>Welcome back</h2>
+                    <p>
+                        Sign in to continue your document conversations
+                        and grounded RAG sessions.
+                    </p>
+                </div>
             </div>
 
             {% if error %}
-            <div class="login-error">
-                <span class="error-icon">!</span>
-                <span>{{ error }}</span>
+            <div class="error-box">
+                {{ error }}
             </div>
             {% endif %}
 
@@ -99,96 +179,106 @@
                 class="login-form"
                 id="loginForm"
             >
-
-                <div class="form-group">
+                <div class="field-group">
                     <label for="username">Username</label>
-
-                    <div class="input-wrap">
-                        <span class="input-icon">♙</span>
-
+                    <div class="field-wrap">
+                        <span class="field-icon">◌</span>
                         <input
                             type="text"
-                            id="username"
                             name="username"
+                            id="username"
                             placeholder="Enter your username"
-                            autocomplete="username"
-                            autofocus
                             required
                         >
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
+                <div class="field-group">
+                    <div class="label-row">
+                        <label for="password">Password</label>
+                        <span>Protected access</span>
+                    </div>
 
-                    <div class="input-wrap">
-                        <span class="input-icon">◈</span>
-
+                    <div class="field-wrap">
+                        <span class="field-icon">◇</span>
                         <input
                             type="password"
-                            id="password"
                             name="password"
+                            id="password"
                             placeholder="Enter your password"
-                            autocomplete="current-password"
                             required
                         >
 
                         <button
                             type="button"
-                            class="password-toggle"
-                            id="passwordToggle"
-                            aria-label="Show password"
+                            class="toggle-btn"
+                            id="togglePassword"
                         >
-                            SHOW
+                            Show
                         </button>
                     </div>
                 </div>
 
                 <button
                     type="submit"
-                    class="login-button"
-                    id="loginButton"
+                    class="login-btn"
+                    id="loginBtn"
                 >
-                    <span>SIGN IN</span>
-                    <span class="button-arrow">→</span>
+                    <span>Sign in to workspace</span>
+                    <span class="arrow">→</span>
                 </button>
             </form>
 
-            <div class="login-security">
-                <span class="security-icon">◇</span>
-                <span>
-                    Secure role-based access for administrators and users.
-                </span>
+            <div class="access-grid">
+                <div class="access-box">
+                    <span class="access-dot access-admin"></span>
+                    <div>
+                        <strong>Administrator</strong>
+                        <small>Documents · users · rebuild</small>
+                    </div>
+                </div>
+
+                <div class="access-box">
+                    <span class="access-dot access-user"></span>
+                    <div>
+                        <strong>User</strong>
+                        <small>Search · chat · citations</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="login-footer-note">
+                Your session is protected with role-based authentication.
             </div>
         </div>
 
-        <div class="login-page-footer">
-            Scholar · RAG From Scratch
+        <div class="login-page-note">
+            RAGFlow · RAG From Scratch
         </div>
     </section>
 
-</div>
+</main>
 
 <script>
 const passwordInput = document.getElementById("password");
-const passwordToggle = document.getElementById("passwordToggle");
+const togglePassword = document.getElementById("togglePassword");
 const loginForm = document.getElementById("loginForm");
-const loginButton = document.getElementById("loginButton");
+const loginBtn = document.getElementById("loginBtn");
 
-passwordToggle.addEventListener("click", function () {
-    const isPassword = passwordInput.type === "password";
+if (togglePassword && passwordInput) {
+    togglePassword.addEventListener("click", function () {
+        const isPassword = passwordInput.type === "password";
+        passwordInput.type = isPassword ? "text" : "password";
+        togglePassword.textContent = isPassword ? "Hide" : "Show";
+    });
+}
 
-    passwordInput.type = isPassword ? "text" : "password";
-    passwordToggle.textContent = isPassword ? "HIDE" : "SHOW";
-});
-
-loginForm.addEventListener("submit", function () {
-    loginButton.disabled = true;
-    loginButton.innerHTML = `
-        <span>SIGNING IN...</span>
-        <span class="login-spinner"></span>
-    `;
-});
+if (loginForm && loginBtn) {
+    loginForm.addEventListener("submit", function () {
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = "<span>Signing in...</span><span class='spinner'></span>";
+    });
+}
 </script>
 
 </body>
